@@ -46,11 +46,12 @@ def football():
         print(f"Cache hit for league: {selected_league}")
 
     return render_template('football.html', matches=matches, leagues=LEAGUES, selected_league=selected_league)
+
 @app.route('/tennis')
 def tennis():
-    """Tennis page with league selection, player ratings, and sorting."""
+    """Tennis page with league selection, player ratings, and category."""
     selected_league = request.args.get('league', 'atp_australian_open')
-    sort_by = request.args.get('sort_by', 'datetime')  # Default sorting is by datetime
+    selected_category = request.args.get('category', 'all')
     url = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
 
     # Fetch matches with player ratings
@@ -64,17 +65,23 @@ def tennis():
     else:
         print(f"Cache hit for tennis league: {selected_league}")
 
-    # Sort matches based on the chosen parameter
-    if sort_by == 'expected_points_player1':
-        matches.sort(key=lambda x: x['expected_points']['player1'], reverse=True)
-    elif sort_by == 'expected_points_player2':
-        matches.sort(key=lambda x: x['expected_points']['player2'], reverse=True)
+            # Filter matches based on the selected category
+    if selected_category != 'all':
+        matches = [
+            match for match in matches
+            if match["players"]["player1_rating"] == selected_category or
+               match["players"]["player2_rating"] == selected_category
+        ]
+
+    # Sort matches by the maximum expected points between Player 1 and Player 2
+    matches.sort(key=lambda x: max(x["expected_points"]["player1"], x["expected_points"]["player2"]), reverse=True)
 
     return render_template(
         'tennis.html',
         matches=matches,
         leagues=TENNIS_LEAGUES,
         selected_league=selected_league,
-        sort_by=sort_by
+        selected_category=selected_category,
+        categories=["A", "B", "C", "D", "all"], 
     )
 

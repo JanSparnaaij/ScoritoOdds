@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Tennis Odds</h1>
 
+<!-- League Selection Form -->
 <form method="get" action="/tennis">
     <label for="league">Select League:</label>
     <select id="league" name="league" onchange="this.form.submit()">
@@ -13,15 +14,14 @@
         {% endfor %}
     </select>
 
-    <label for="sort_by">Sort By:</label>
-    <select id="sort_by" name="sort_by" onchange="this.form.submit()">
-        <option value="datetime" {% if sort_by == 'datetime' %}selected{% endif %}>DateTime</option>
-        <option value="expected_points_player1" {% if sort_by == 'expected_points_player1' %}selected{% endif %}>
-            Player 1 Expected Points
+    <!-- Category Filter -->
+    <label for="category">Filter by Category:</label>
+    <select id="category" name="category" onchange="this.form.submit()">
+        {% for category in categories %}
+        <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>
+            {{ category if category != 'all' else 'All Categories' }}
         </option>
-        <option value="expected_points_player2" {% if sort_by == 'expected_points_player2' %}selected{% endif %}>
-            Player 2 Expected Points
-        </option>
+        {% endfor %}
     </select>
 </form>
 
