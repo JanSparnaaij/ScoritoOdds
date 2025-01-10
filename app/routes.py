@@ -14,6 +14,7 @@ cache = Cache(app)
 LEAGUES = {
     "eredivisie": "https://www.oddsportal.com/soccer/netherlands/eredivisie/",
     "premier_league": "https://www.oddsportal.com/football/england/premier-league/",
+    "jupiler_pro_league": "https://www.oddsportal.com/football/belgium/jupiler-pro-league/",
 }
 
 TENNIS_LEAGUES = {
