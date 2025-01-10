@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Welcome to the Scorito Portal</h1>
+
+<p>Select a sport to explore:</p>
+
+<!-- Buttons for Sports -->
+<div class="button-container">
+    <form action="/football" method="get" style="display:inline;">
+        <button type="submit" class="btn">Football</button>
+    </form>
+
+    <form action="/tennis" method="get" style="display:inline;">
+        <button type="submit" class="btn">Tennis</button>
+    </form>
+</div>
+
+<style>
+    .button-container {
+        margin-top: 20px;
+        text-align: center;
+    }
+    .btn {
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 10px;
+    }
+    .btn:hover {
+        background-color: #0056b3;
+    }
+</style>
+{% endblock %}

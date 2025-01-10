@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Tennis Odds</h1>
+
+<form method="get" action="/tennis">
+    <label for="league">Select League:</label>
+    <select id="league" name="league" onchange="this.form.submit()">
+        {% for league, url in leagues.items() %}
+        <option value="{{ league }}" {% if league == selected_league %}selected{% endif %}>
+            {{ league.replace('_', ' ').title() }}
+        </option>
+        {% endfor %}
+    </select>
+</form>
+
+<!-- Debugging Info -->
+{% if matches %}
+    <p>{{ matches|length }} matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
+{% else %}
+    <p>No matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
+{% endif %}
+
+<!-- Table for Match Results -->
+<table>
+    <thead>
+        <tr>
+            <th>DateTime</th>
+            <th>Player 1</th>
+            <th>Player 2</th>
+            <th>Player 1 Odds</th>
+            <th>Player 2 Odds</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for match in matches %}
+        <tr>
+            <!-- DateTime -->
+            <td>{{ match.datetime }}</td>
+
+            <!-- Highlight Player 1 if their odd is lower -->
+            <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
+                {{ match.players.player1 }}
+            </td>
+
+            <!-- Highlight Player 2 if their odd is lower -->
+            <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
+                {{ match.players.player2 }}
+            </td>
+
+            <!-- Highlight Player 1 Odd if it's lower -->
+            <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
+                {{ match.odds.player1 }}
+            </td>
+
+            <!-- Highlight Player 2 Odd if it's lower -->
+            <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
+                {{ match.odds.player2 }}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

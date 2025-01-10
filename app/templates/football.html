@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Football Odds</h1>
+
+<!-- Dropdown for Selecting League -->
+<form method="get" action="/football">
+    <label for="league">Select League:</label>
+    <select id="league" name="league" onchange="this.form.submit()">
+        {% for league, url in leagues.items() %}
+        <option value="{{ league }}" {% if league == selected_league %}selected{% endif %}>
+            {{ league.replace('_', ' ').title() }}
+        </option>
+        {% endfor %}
+    </select>
+</form>
+
+<!-- Debugging Info -->
+{% if matches %}
+    <p>{{ matches|length }} matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
+{% else %}
+    <p>No matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
+{% endif %}
+
+<!-- Table for Match Results -->
+<table>
+    <thead>
+        <tr>
+            <th>Home Team</th>
+            <th>Away Team</th>
+            <th>Home Odds</th>
+            <th>Draw Odds</th>
+            <th>Away Odds</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for match in matches %}
+        <tr>
+            <td {% if match.odds.home <= match.odds.draw and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.home_team }}
+            </td>
+            <td {% if match.odds.away <= match.odds.home and match.odds.away <= match.odds.draw %}class="highlight"{% endif %}>
+                {{ match.away_team }}
+            </td>
+            <td {% if match.odds.home <= match.odds.draw and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.odds.home }}
+            </td>
+            <td {% if match.odds.draw <= match.odds.home and match.odds.draw <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.odds.draw }}
+            </td>
+            <td {% if match.odds.away <= match.odds.home and match.odds.away <= match.odds.draw %}class="highlight"{% endif %}>
+                {{ match.odds.away }}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
