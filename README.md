@@ -127,7 +127,8 @@ A web application that scrapes and displays betting odds for football and tennis
 **Future Enhancements**
 -----------------------
 
--   Add more leagues and sports (e.g., basketball, cricket).
+-   Add more leagues and sports (e.g., darts, formula1).
+-   impelent payment gateway
 -   Implement a database to store historical odds.
 -   Add user authentication for personalized features.
 -   Provide API access for programmatic consumption of odds.
