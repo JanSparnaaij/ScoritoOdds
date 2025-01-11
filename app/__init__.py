@@ -11,7 +11,8 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is not set")
-print(f"Loaded SECRET_KEY from .env: {os.getenv('SECRET_KEY')}")
+# secret debug
+# print(f"Loaded SECRET_KEY from .env: {os.getenv('SECRET_KEY')}")
 
 # Ensure browsers are installed
 try:
