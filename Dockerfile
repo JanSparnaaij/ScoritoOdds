@@ -1,19 +1,20 @@
-FROM heroku/heroku:22
+FROM python:3.10-slim
+
+# Set environment variables for production
+ENV PYTHONUNBUFFERED=1 \
+    FLASK_ENV=production \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
+
+# Create a non-root user for better security
+RUN adduser --disabled-password --gecos '' appuser
 
 # Copy .env file
 COPY .env /app/.env
-
-# Export the variables from .env as environment variables
-RUN export $(grep -v '^#' /app/.env | xargs) && \
-    echo "Environment variables loaded for build."
 
 # Set the working directory and other configurations
 WORKDIR /app
 COPY . /app
 ENV FLASK_ENV=production
-
-# Debug: Check .env contents
-RUN cat /app/.env
 
 # Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
@@ -48,19 +49,15 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && apt-get clean
 
-# Set Python3 as the default python
-RUN ln -sf /usr/bin/python3 /usr/bin/python && \
-    ln -sf /usr/bin/pip3 /usr/bin/pip
-
-# Set working directory and copy files
-WORKDIR /app
-COPY . /app
-
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
 RUN playwright install --with-deps
+
+# Change to the non-root user
+USER appuser
 
 # Expose port and run the app
 EXPOSE 8000
