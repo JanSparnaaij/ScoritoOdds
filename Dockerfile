@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y \
     libatspi2.0-0 \
     libxcursor1 \                     
     libgtk-3-0 \
+    libgstcodecparsers-1.0.so.0 \
     && apt-get clean
 
 # Set Python3 as the default python
