@@ -18,7 +18,7 @@ def fetch_all_matches(league_url):
         page = browser.new_page()
 
         print(f"Navigating to league: {league_url}")
-        page.goto(league_url)
+        page.goto(league_url, timeout=60000)
 
         # Ensure the league page has loaded
         if "football" not in page.url:
