@@ -12,30 +12,35 @@ ENV SECRET_KEY=${SECRET_KEY}
 
 # Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    libgstcodecparsers-1.0-0 \
-    libgstreamer1.0-0 \
-    libgstreamer-plugins-base1.0-0 \
-    libgstreamer-gl1.0-0 \
-    libgstreamer-plugins-good1.0-0 \
-    libflite1 \
-    libwoff1 \
-    libenchant-2-2 \
-    libsecret-1-0 \
+    gstreamer1.0-libav \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-tools \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
     libavif13 \
+    libenchant-2-2 \
+    libflite1 \
+    libgles2-mesa \
+    libgstreamer-plugins-base1.0-0 \
+    libgstreamer-plugins-good1.0-0 \
+    libgstreamer-gl1.0-0 \
+    libgstreamer1.0-0 \
+    libgtk-3-0 \
     libhyphen0 \
     libmanette-0.2-0 \
-    libgles2-mesa \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libxkbcommon0 \
-    libatspi2.0-0 \
+    libsecret-1-0 \
+    libwoff1 \
     libxcursor1 \
-    libgtk-3-0 \
+    libxdamage1 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxrandr2 \
+    python3 \
+    python3-pip \
     && apt-get clean
 
 # Set Python3 as the default python
