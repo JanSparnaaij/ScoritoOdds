@@ -14,6 +14,7 @@ ENV SECRET_KEY=${SECRET_KEY}
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
+    libgstcodecparsers-1.0-0 \
     libgstreamer1.0-0 \
     libgstreamer-plugins-base1.0-0 \
     libgstreamer-gl1.0-0 \
