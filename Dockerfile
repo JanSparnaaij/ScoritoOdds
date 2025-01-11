@@ -25,6 +25,15 @@ RUN apt-get update && apt-get install -y \
     libhyphen0 \
     libmanette-0.2-0 \
     libgles2-mesa \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libxcursor1 \                     ║
+║   libgtk-3-0 \
     && apt-get clean
 
 # Set Python3 as the default python
