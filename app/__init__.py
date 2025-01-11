@@ -26,6 +26,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Explicitly set SECRET_KEY from the environment
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+    print(f"Explicitly set SECRET_KEY: {app.config['SECRET_KEY']}")
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
