@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+print(f"Loaded SECRET_KEY from .env: {os.getenv('SECRET_KEY')}")
 
 # Ensure browsers are installed
 try:
@@ -24,9 +25,6 @@ def create_app():
     """Application Factory"""
     app = Flask(__name__)
     app.config.from_object(Config)
-
-    # Debugging: Print the SECRET_KEY
-    print(f"SECRET_KEY: {app.config['SECRET_KEY']}")
 
     # Initialize extensions
     db.init_app(app)
