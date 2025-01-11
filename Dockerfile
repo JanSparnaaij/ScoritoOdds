@@ -1,30 +1,37 @@
-# Use the Heroku-22 stack as the base image
 FROM heroku/heroku:22
 
-# Install system dependencies
+# Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
-    curl \
-    gnupg \
+    python3 \
+    python3-pip \
     libgstreamer1.0-0 \
-    libwoff1 \
     libgstreamer-plugins-base1.0-0 \
     libgstreamer-gl1.0-0 \
+    libgstreamer-plugins-good1.0-0 \
+    libflite1 \
+    libwoff1 \
     libenchant-2-2 \
-    libsecret-1-0
+    libsecret-1-0 \
+    libavif13 \
+    libhyphen0 \
+    libmanette-0.2-0 \
+    libgles2-mesa \
+    && apt-get clean
 
-# Install Python and pip
-RUN apt-get install -y python3 python3-pip
+# Set Python3 as the default python
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
 
-# Copy your application code to the container
+# Set working directory and copy files
 WORKDIR /app
-COPY . .
+COPY . /app
 
 # Install Python dependencies
-RUN pip3 install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright and browsers
-RUN pip3 install playwright
+# Install Playwright browsers
 RUN playwright install
 
-# Command to run your app
-CMD ["gunicorn", "app:create_app()", "--bind", "0.0.0.0:8000"]
+# Expose port and run the app
+EXPOSE 8000
+CMD gunicorn "app:create_app()" --bind 0.0.0.0:8000
