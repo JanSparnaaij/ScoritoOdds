@@ -7,7 +7,7 @@ import subprocess
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(dotenv_path=".env")
 print(f"Loaded SECRET_KEY from .env: {os.getenv('SECRET_KEY')}")
 
 # Ensure browsers are installed

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from app.football_fetcher import fetch_all_matches
 from app.tennis_fetcher import fetch_tennis_matches
 from app.player_ratings import PLAYER_RATINGS
@@ -28,6 +28,7 @@ def home():
 @main_bp.route('/football')
 def football():
     """Football page"""
+    print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
     if 'user_id' not in session:
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
@@ -46,6 +47,7 @@ def football():
 @main_bp.route('/tennis')
 def tennis():
     """Tennis page"""
+    print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
     if 'user_id' not in session:
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
