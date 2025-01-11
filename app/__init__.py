@@ -4,6 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
 from playwright.__main__ import main as playwright_main
+from dotenv import load_dotenv
+import os
 
 # Ensure browsers are installed
 try:
@@ -17,6 +19,9 @@ migrate = Migrate()
 cache = Cache()
 
 def create_app():
+    # Load environment variables from .env
+    load_dotenv()
+
     """Application Factory"""
     app = Flask(__name__)
     app.config.from_object(Config)
