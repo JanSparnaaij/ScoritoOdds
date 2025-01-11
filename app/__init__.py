@@ -38,4 +38,4 @@ def create_app():
 
     return app
 
-print(SECRET_KEY)
+
