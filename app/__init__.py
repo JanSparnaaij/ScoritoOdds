@@ -3,6 +3,13 @@ from flask_caching import Cache
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
+from playwright.__main__ import main as playwright_main
+
+# Ensure browsers are installed
+try:
+    playwright_main(['install'])
+except Exception as e:
+    print(f"Error installing Playwright browsers: {e}")
 
 # Initialize extensions
 db = SQLAlchemy()
