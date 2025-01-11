@@ -1,5 +1,11 @@
 FROM heroku/heroku:22
 
+# Copy .env file
+COPY .env /app/.env
+
+# Set environment variables
+ENV FLASK_ENV=production
+
 # Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
@@ -35,3 +41,6 @@ RUN playwright install
 # Expose port and run the app
 EXPOSE 8000
 CMD gunicorn "app:create_app()" --bind 0.0.0.0:8000
+
+# Debug: Check .env contents
+RUN cat /app/.env
