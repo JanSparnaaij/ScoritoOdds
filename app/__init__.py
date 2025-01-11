@@ -26,7 +26,7 @@ def create_app():
     app.config.from_object(Config)
 
     # Debugging: Print the SECRET_KEY
-    # print("SECRET_KEY:", app.config['SECRET_KEY'])
+    print(f"SECRET_KEY: {app.config['SECRET_KEY']}")
 
     # Initialize extensions
     db.init_app(app)
