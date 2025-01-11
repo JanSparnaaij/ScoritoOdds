@@ -8,6 +8,7 @@ RUN cat /app/.env
 
 # Set environment variables
 ENV FLASK_ENV=production
+ENV SECRET_KEY=${SECRET_KEY}
 
 # Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
