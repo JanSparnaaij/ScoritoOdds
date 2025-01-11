@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 from flask_caching import Cache
 from app.football_fetcher import fetch_all_matches
 from app.tennis_fetcher import fetch_tennis_matches
+from config import PLAYER_RATINGS
 
 app = Flask(__name__)
 
@@ -19,6 +20,7 @@ LEAGUES = {
 
 TENNIS_LEAGUES = {
     "atp_australian_open": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
+    "wta_australian_open": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
 }
 
 @app.route('/')
@@ -47,8 +49,39 @@ def football():
 
 @app.route('/tennis')
 def tennis():
-    """Tennis page with league selection."""
+    """Tennis page with league selection, player ratings, and category."""
     selected_league = request.args.get('league', 'atp_australian_open')
+    selected_category = request.args.get('category', 'all')
     url = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
-    matches = fetch_tennis_matches(url)
-    return render_template('tennis.html', matches=matches, leagues=TENNIS_LEAGUES, selected_league=selected_league)
+
+    # Fetch matches with player ratings
+    cache_key = f"tennis_matches_{selected_league}"
+    matches = cache.get(cache_key)
+
+    if not matches:
+        print(f"Cache miss for tennis league: {selected_league}. Fetching data...")
+        matches = fetch_tennis_matches(url, PLAYER_RATINGS)
+        cache.set(cache_key, matches)  # Cache the fetched matches
+    else:
+        print(f"Cache hit for tennis league: {selected_league}")
+
+            # Filter matches based on the selected category
+    if selected_category != 'all':
+        matches = [
+            match for match in matches
+            if match["players"]["player1_rating"] == selected_category or
+               match["players"]["player2_rating"] == selected_category
+        ]
+
+    # Sort matches by the maximum expected points between Player 1 and Player 2
+    matches.sort(key=lambda x: max(x["expected_points"]["player1"], x["expected_points"]["player2"]), reverse=True)
+
+    return render_template(
+        'tennis.html',
+        matches=matches,
+        leagues=TENNIS_LEAGUES,
+        selected_league=selected_league,
+        selected_category=selected_category,
+        categories=["A", "B", "C", "D", "all"], 
+    )
+

@@ -3,12 +3,23 @@
 {% block content %}
 <h1>Tennis Odds</h1>
 
+<!-- League Selection Form -->
 <form method="get" action="/tennis">
     <label for="league">Select League:</label>
     <select id="league" name="league" onchange="this.form.submit()">
         {% for league, url in leagues.items() %}
         <option value="{{ league }}" {% if league == selected_league %}selected{% endif %}>
             {{ league.replace('_', ' ').title() }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Category Filter -->
+    <label for="category">Filter by Category:</label>
+    <select id="category" name="category" onchange="this.form.submit()">
+        {% for category in categories %}
+        <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>
+            {{ category if category != 'all' else 'All Categories' }}
         </option>
         {% endfor %}
     </select>
@@ -27,9 +38,13 @@
         <tr>
             <th>DateTime</th>
             <th>Player 1</th>
+            <th>Player 1 Category</th>
             <th>Player 2</th>
+            <th>Player 2 Category</th>
             <th>Player 1 Odds</th>
             <th>Player 2 Odds</th>
+            <th>Player 1 Expected Points</th>
+            <th>Player 2 Expected Points</th>
         </tr>
     </thead>
     <tbody>
@@ -38,25 +53,29 @@
             <!-- DateTime -->
             <td>{{ match.datetime }}</td>
 
-            <!-- Highlight Player 1 if their odd is lower -->
+            <!-- Player 1 Name and Category -->
             <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
                 {{ match.players.player1 }}
             </td>
+            <td>{{ match.players.player1_rating }}</td>
 
-            <!-- Highlight Player 2 if their odd is lower -->
+            <!-- Player 2 Name and Category -->
             <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
                 {{ match.players.player2 }}
             </td>
+            <td>{{ match.players.player2_rating }}</td>
 
-            <!-- Highlight Player 1 Odd if it's lower -->
+            <!-- Odds -->
             <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
                 {{ match.odds.player1 }}
             </td>
-
-            <!-- Highlight Player 2 Odd if it's lower -->
             <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
                 {{ match.odds.player2 }}
             </td>
+
+            <!-- Expected Points -->
+            <td>{{ match.expected_points.player1 }}</td>
+            <td>{{ match.expected_points.player2 }}</td>
         </tr>
         {% endfor %}
     </tbody>
