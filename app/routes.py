@@ -1,17 +1,14 @@
-from flask import Flask, render_template, request
-from flask_caching import Cache
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from app.football_fetcher import fetch_all_matches
 from app.tennis_fetcher import fetch_tennis_matches
-from config import PLAYER_RATINGS
+from app.player_ratings import PLAYER_RATINGS
+from app import cache, db
+from werkzeug.security import generate_password_hash, check_password_hash
+from app.models import User
 
-app = Flask(__name__)
+# Blueprint for main routes
+main_bp = Blueprint('main', __name__)
 
-# Configure caching
-app.config['CACHE_TYPE'] = 'SimpleCache'
-app.config['CACHE_DEFAULT_TIMEOUT'] = 3600  # Cache timeout in seconds (1 hour)
-cache = Cache(app)
-
-# Define the leagues and their URLs
 LEAGUES = {
     "eredivisie": "https://www.oddsportal.com/soccer/netherlands/eredivisie/",
     "premier_league": "https://www.oddsportal.com/football/england/premier-league/",
@@ -23,49 +20,47 @@ TENNIS_LEAGUES = {
     "wta_australian_open": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
 }
 
-@app.route('/')
+@main_bp.route('/')
 def home():
-    """Homepage with sport selection."""
+    """Homepage"""
     return render_template('home.html')
 
-@app.route('/football')
+@main_bp.route('/football')
 def football():
-    """Football page with league selection."""
-    selected_league = request.args.get('league', 'eredivisie')
+    """Football page"""
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('auth.login'))
 
-    # Fetch matches from cache or refresh if expired
+    selected_league = request.args.get('league', 'eredivisie')
     cache_key = f"matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
-        print(f"Cache miss for league: {selected_league}. Fetching data...")
         url = LEAGUES.get(selected_league, LEAGUES['eredivisie'])
         matches = fetch_all_matches(url)
-        cache.set(cache_key, matches)  # Cache the fetched matches
-    else:
-        print(f"Cache hit for league: {selected_league}")
+        cache.set(cache_key, matches)
 
     return render_template('football.html', matches=matches, leagues=LEAGUES, selected_league=selected_league)
 
-@app.route('/tennis')
+@main_bp.route('/tennis')
 def tennis():
-    """Tennis page with league selection, player ratings, and category."""
+    """Tennis page"""
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('auth.login'))
+
     selected_league = request.args.get('league', 'atp_australian_open')
     selected_category = request.args.get('category', 'all')
     url = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
 
-    # Fetch matches with player ratings
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
-        print(f"Cache miss for tennis league: {selected_league}. Fetching data...")
         matches = fetch_tennis_matches(url, PLAYER_RATINGS)
-        cache.set(cache_key, matches)  # Cache the fetched matches
-    else:
-        print(f"Cache hit for tennis league: {selected_league}")
+        cache.set(cache_key, matches)
 
-            # Filter matches based on the selected category
     if selected_category != 'all':
         matches = [
             match for match in matches
@@ -73,7 +68,6 @@ def tennis():
                match["players"]["player2_rating"] == selected_category
         ]
 
-    # Sort matches by the maximum expected points between Player 1 and Player 2
     matches.sort(key=lambda x: max(x["expected_points"]["player1"], x["expected_points"]["player2"]), reverse=True)
 
     return render_template(
@@ -82,6 +76,51 @@ def tennis():
         leagues=TENNIS_LEAGUES,
         selected_league=selected_league,
         selected_category=selected_category,
-        categories=["A", "B", "C", "D", "all"], 
+        categories=["A", "B", "C", "D", "all"],
     )
 
+# Routes for authentication
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login page."""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('main.home'))
+        else:
+            flash('Invalid credentials. Please try again.', 'danger')
+
+    return render_template('login.html')
+
+@auth_bp.route('/signup', methods=['GET', 'POST'])
+def signup():
+    """Signup page."""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists. Please choose another one.', 'danger')
+        else:
+            hashed_password = generate_password_hash(password, method='sha256')
+            new_user = User(username=username, password=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Account created successfully! Please log in.', 'success')
+            return redirect(url_for('auth.login'))
+
+    return render_template('signup.html')
+
+@auth_bp.route('/logout')
+def logout():
+    """Logout page."""
+    session.pop('user_id', None)
+    flash('Logged out successfully!', 'success')
+    return redirect(url_for('main.home'))
