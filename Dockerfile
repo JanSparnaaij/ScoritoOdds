@@ -3,12 +3,17 @@ FROM heroku/heroku:22
 # Copy .env file
 COPY .env /app/.env
 
+# Export the variables from .env as environment variables
+RUN export $(grep -v '^#' /app/.env | xargs) && \
+    echo "Environment variables loaded for build."
+
+# Set the working directory and other configurations
+WORKDIR /app
+COPY . /app
+ENV FLASK_ENV=production
+
 # Debug: Check .env contents
 RUN cat /app/.env
-
-# Set environment variables
-ENV FLASK_ENV=production
-ENV SECRET_KEY=${SECRET_KEY}
 
 # Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
