@@ -7,6 +7,8 @@ from playwright.__main__ import main as playwright_main
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
+
 # Ensure browsers are installed
 try:
     playwright_main(['install'])
@@ -19,9 +21,6 @@ migrate = Migrate()
 cache = Cache()
 
 def create_app():
-    # Load environment variables from .env
-    load_dotenv()
-
     """Application Factory"""
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -38,3 +37,5 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
     return app
+
+print(SECRET_KEY)
