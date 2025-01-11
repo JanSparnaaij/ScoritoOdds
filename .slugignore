@@ -1,2 +1,5 @@
-.apt
-tmp/*
+*.log
+*.tmp
+node_modules
+__pycache__
+.apt/
