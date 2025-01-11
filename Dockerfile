@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libatspi2.0-0 \
-    libavif \
+    libavif-dev \
     libenchant-2-2 \
     libflite1 \
     libgles2-mesa \
