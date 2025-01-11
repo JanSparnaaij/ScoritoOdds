@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y \
     libgstreamer-plugins-base1.0-0 \
     libgstreamer-gl1.0-0 \
     libgstreamer-plugins-good1.0-0 \
-    libgstreamer-plugins-bad1.0-0 \ 
     libflite1 \
     libwoff1 \
     libenchant-2-2 \
@@ -33,6 +32,8 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libxkbcommon0 \
     libatspi2.0-0 \
+    libxcursor1 \
+    libgtk-3-0 \
     && apt-get clean
 
 # Set Python3 as the default python
@@ -52,5 +53,3 @@ RUN playwright install
 # Expose port and run the app
 EXPOSE 8000
 CMD gunicorn "app:create_app()" --bind 0.0.0.0:8000
-
-
