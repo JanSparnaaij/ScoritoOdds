@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libgstreamer-plugins-base1.0-0 \
     libgstreamer-gl1.0-0 \
     libgstreamer-plugins-good1.0-0 \
+    libgstreamer-plugins-bad1.0-0 \ 
     libflite1 \
     libwoff1 \
     libenchant-2-2 \
@@ -32,9 +33,6 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libxkbcommon0 \
     libatspi2.0-0 \
-    libxcursor1 \                     
-    libgtk-3-0 \
-    libgstcodecparsers-1.0.so.0 \
     && apt-get clean
 
 # Set Python3 as the default python
