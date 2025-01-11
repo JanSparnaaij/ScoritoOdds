@@ -9,6 +9,8 @@ load_dotenv()
 app = create_app()
 
 if __name__ == "__main__":
+    from os import environ
+    print(f"SECRET_KEY: {environ.get('SECRET_KEY')}")
     app.run(debug=True)
 
 
