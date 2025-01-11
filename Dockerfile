@@ -32,8 +32,8 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libxkbcommon0 \
     libatspi2.0-0 \
-    libxcursor1 \                     ║
-║   libgtk-3-0 \
+    libxcursor1 \                     
+    libgtk-3-0 \
     && apt-get clean
 
 # Set Python3 as the default python
