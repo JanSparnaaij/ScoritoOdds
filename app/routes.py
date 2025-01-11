@@ -28,7 +28,8 @@ def home():
 @main_bp.route('/football')
 def football():
     """Football page"""
-    print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
+    # secret debug
+    # print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
     if 'user_id' not in session:
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
@@ -47,7 +48,8 @@ def football():
 @main_bp.route('/tennis')
 def tennis():
     """Tennis page"""
-    print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
+    # secret debug
+    # print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
     if 'user_id' not in session:
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
