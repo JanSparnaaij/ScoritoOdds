@@ -60,8 +60,8 @@ COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
-RUN playwright install
+RUN playwright install --with-deps
 
 # Expose port and run the app
 EXPOSE 8000
-CMD gunicorn "app:create_app()" --bind 0.0.0.0:8000 --timeout 120
+CMD gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 120
