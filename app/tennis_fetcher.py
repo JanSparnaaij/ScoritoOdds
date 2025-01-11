@@ -1,5 +1,4 @@
 from playwright.sync_api import sync_playwright
-from config import PLAYER_RATINGS
 
 def fetch_tennis_matches(url, PLAYER_RATINGS):
     """
