@@ -3,7 +3,7 @@ from flask_caching import Cache
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
-from playwright.__main__ import main as playwright_main
+import subprocess
 from dotenv import load_dotenv
 import os
 
@@ -11,7 +11,7 @@ load_dotenv()
 
 # Ensure browsers are installed
 try:
-    playwright_main(['install'])
+    subprocess.run(["playwright", "install"], check=True)
 except Exception as e:
     print(f"Error installing Playwright browsers: {e}")
 
@@ -26,7 +26,7 @@ def create_app():
     app.config.from_object(Config)
 
     # Debugging: Print the SECRET_KEY
-    print("SECRET_KEY:", app.config['SECRET_KEY'])
+    # print("SECRET_KEY:", app.config['SECRET_KEY'])
 
     # Initialize extensions
     db.init_app(app)
