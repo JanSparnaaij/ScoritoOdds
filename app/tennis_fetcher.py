@@ -46,6 +46,7 @@ def fetch_tennis_matches(url, PLAYER_RATINGS):
             print(f"Final match count: {current_count}")
 
             tennis_matches = []
+            current_round = None  # To store the current round for a group of matches
             current_date = None  # To store the date for the current group of matches
 
             for i in range(current_count):
@@ -53,14 +54,20 @@ def fetch_tennis_matches(url, PLAYER_RATINGS):
                     # Scope to the current match container
                     container = match_containers.nth(i)
 
+                    # Check if this container specifies a new round
+                    round_element = container.locator('div.round-class')  # Replace 'round-class' with the actual class for round
+                    if round_element.count() > 0:
+                        current_round = round_element.text_content().strip()
+
+
                     # Check if this container specifies a new date
                     date_element = container.locator('div.bg-gray-light div.text-black-main')
                     if date_element.count() > 0:
                         current_date = date_element.text_content().strip()
 
-                    # Ensure a date is available for matches
-                    if not current_date:
-                        print(f"Skipping match {i + 1}: No date found.")
+                    # Ensure both round and date are available for matches
+                    if not current_round or not current_date:
+                        print(f"Skipping match {i + 1}: No round or date found.")
                         continue
 
                     # Extract time (e.g., "01:00")
@@ -70,8 +77,8 @@ def fetch_tennis_matches(url, PLAYER_RATINGS):
                     datetime = f"{current_date} {match_time}"
 
                     # Extract player names
-                    player1 = container.locator('a[title]').nth(0).get_attribute('title').strip()
-                    player2 = container.locator('a[title]').nth(1).get_attribute('title').strip()
+                    player1 = container.locator('a[title]').nth(0).text_content().strip()
+                    player2 = container.locator('a[title]').nth(1).text_content().strip()
 
                     # Extract odds
                     odds = container.locator('div[data-v-34474325] p')
@@ -98,6 +105,7 @@ def fetch_tennis_matches(url, PLAYER_RATINGS):
                     # Add match details to the list
                     tennis_matches.append({
                         "datetime": datetime,
+                        "round": current_round,
                         "players": {
                             "player1": player1,
                             "player1_rating": player1_rating,
