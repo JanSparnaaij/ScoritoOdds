@@ -8,6 +8,10 @@ ENV PYTHONUNBUFFERED=1 \
 # Create a non-root user for better security
 RUN adduser --disabled-password --gecos '' appuser
 
+# Create directory for Playwright browsers and set permissions
+RUN mkdir -p /ms-playwright-browsers && \
+    chown -R appuser:appuser /ms-playwright-browsers
+
 # Copy .env file
 COPY .env /app/.env
 
@@ -19,6 +23,7 @@ ENV FLASK_ENV=production
 # Install Python and other dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --fix-missing \
+    curl \
     gstreamer1.0-libav \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
@@ -54,7 +59,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
-RUN playwright install --with-deps
+RUN pip install playwright && playwright install --with-deps
 
 # Change to the non-root user
 USER appuser
