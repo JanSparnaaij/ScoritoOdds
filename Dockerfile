@@ -17,7 +17,7 @@ COPY . /app
 ENV FLASK_ENV=production
 
 # Install Python and other dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --fix-missing \
     gstreamer1.0-libav \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
