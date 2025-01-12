@@ -25,7 +25,11 @@ TENNIS_LEAGUES = {
     "atp_australian_open": {
         "matches": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
         "rounds": "https://www.oddsportal.com/tennis/australia/atp-australian-open/standings/",
-    },    "wta_australian_open": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
+    }, 
+    "wta_australian_open": {
+        "matches": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
+        "rounds": "https://www.oddsportal.com/tennis/australia/wta-australian-open/standings/",
+    },   
 }
 
 @main_bp.route('/')
@@ -87,8 +91,8 @@ def tennis():
     if selected_category != 'all':
         matches = [
             match for match in matches
-            if match["players"]["player1_rating"] == selected_category or
-               match["players"]["player2_rating"] == selected_category
+            if  match["players"].get("player1_rating") == selected_category or
+                match["players"].get("player2_rating") == selected_category
         ]
 
     # Sort matches by highest expected points
