@@ -60,7 +60,7 @@ def extract_player_names(url):
 
 # Example usage
 if __name__ == "__main__":
-    url = "https://www.oddsportal.com/tennis/australia/atp-australian-open/"
+    url = "https://www.oddsportal.com/tennis/australia/wta-australian-open/"
     players = extract_player_names(url)
     print("Players found:")
     for player in sorted(players):
