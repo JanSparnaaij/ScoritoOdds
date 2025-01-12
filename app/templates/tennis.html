@@ -37,6 +37,7 @@
     <thead>
         <tr>
             <th>DateTime</th>
+            <th>Round</th>
             <th>Player 1</th>
             <th>Player 1 Category</th>
             <th>Player 2</th>
@@ -52,6 +53,9 @@
         <tr>
             <!-- DateTime -->
             <td>{{ match.datetime }}</td>
+
+            <!-- Round -->
+            <td>{{ match.round }}</td> <!-- Display Round -->
 
             <!-- Player 1 Name and Category -->
             <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
