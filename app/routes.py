@@ -11,12 +11,14 @@ main_bp = Blueprint('main', __name__)
 
 LEAGUES = {
     "eredivisie": "https://www.oddsportal.com/soccer/netherlands/eredivisie/",
+    "eerste_divisie": "https://www.oddsportal.com/football/netherlands/eerste-divisie/",
     "premier_league": "https://www.oddsportal.com/football/england/premier-league/",
     "jupiler_pro_league": "https://www.oddsportal.com/football/belgium/jupiler-pro-league/",
     "bundesliga": "https://www.oddsportal.com/football/germany/bundesliga/",
     "serie_a": "https://www.oddsportal.com/football/italy/serie-a/",
     "la_liga": "https://www.oddsportal.com/football/spain/laliga/",
     "champions_league": "https://www.oddsportal.com/football/europe/champions-league/",
+    "europa_league": "https://www.oddsportal.com/football/europe/europa-league/",
 }
 
 TENNIS_LEAGUES = {
