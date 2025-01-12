@@ -1,23 +1,31 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from app.football_fetcher import fetch_all_matches
-from app.tennis_fetcher import fetch_tennis_matches
 from app.player_ratings import PLAYER_RATINGS
 from app import cache, db
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
+from app.tennis_fetcher import fetch_combined_tennis_data
 
 # Blueprint for main routes
 main_bp = Blueprint('main', __name__)
 
 LEAGUES = {
     "eredivisie": "https://www.oddsportal.com/soccer/netherlands/eredivisie/",
+    "eerste_divisie": "https://www.oddsportal.com/football/netherlands/eerste-divisie/",
     "premier_league": "https://www.oddsportal.com/football/england/premier-league/",
     "jupiler_pro_league": "https://www.oddsportal.com/football/belgium/jupiler-pro-league/",
+    "bundesliga": "https://www.oddsportal.com/football/germany/bundesliga/",
+    "serie_a": "https://www.oddsportal.com/football/italy/serie-a/",
+    "la_liga": "https://www.oddsportal.com/football/spain/laliga/",
+    "champions_league": "https://www.oddsportal.com/football/europe/champions-league/",
+    "europa_league": "https://www.oddsportal.com/football/europe/europa-league/",
 }
 
 TENNIS_LEAGUES = {
-    "atp_australian_open": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
-    "wta_australian_open": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
+    "atp_australian_open": {
+        "matches": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
+        "rounds": "https://www.oddsportal.com/tennis/australia/atp-australian-open/standings/",
+    },    "wta_australian_open": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
 }
 
 @main_bp.route('/')
@@ -43,28 +51,39 @@ def football():
         matches = fetch_all_matches(url)
         cache.set(cache_key, matches)
 
+    # Debugging: Check if matches is None
+    # Handle cases where matches are None or empty
+    if matches is None or len(matches) == 0:
+        flash("No matches could be fetched for the selected league.", "danger")
+        matches = []  # Pass an empty list to avoid breaking the template
+
     return render_template('football.html', matches=matches, leagues=LEAGUES, selected_league=selected_league)
 
 @main_bp.route('/tennis')
 def tennis():
     """Tennis page"""
-    # secret debug
-    # print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
+    # Ensure user is logged in
     if 'user_id' not in session:
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
 
+    # Get selected league and category from query parameters
     selected_league = request.args.get('league', 'atp_australian_open')
     selected_category = request.args.get('category', 'all')
-    url = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
+    league_urls = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
+    matches_url = league_urls['matches']
+    rounds_url = league_urls['rounds']
 
+    # Cache key to avoid redundant fetching
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
-        matches = fetch_tennis_matches(url, PLAYER_RATINGS)
+        # Fetch combined data (matches and rounds)
+        matches = fetch_combined_tennis_data(matches_url, rounds_url, PLAYER_RATINGS)
         cache.set(cache_key, matches)
 
+    # Filter matches by category if not 'all'
     if selected_category != 'all':
         matches = [
             match for match in matches
@@ -72,8 +91,10 @@ def tennis():
                match["players"]["player2_rating"] == selected_category
         ]
 
+    # Sort matches by highest expected points
     matches.sort(key=lambda x: max(x["expected_points"]["player1"], x["expected_points"]["player2"]), reverse=True)
 
+    # Render the template
     return render_template(
         'tennis.html',
         matches=matches,
