@@ -11,8 +11,6 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is not set")
-# secret debug
-# print(f"Loaded SECRET_KEY from .env: {os.getenv('SECRET_KEY')}")
 
 # Ensure browsers are installed
 try:
@@ -32,7 +30,6 @@ def create_app():
 
     # Explicitly set SECRET_KEY from the environment
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-    print(f"Explicitly set SECRET_KEY: {app.config['SECRET_KEY']}")
 
     # Initialize extensions
     db.init_app(app)
