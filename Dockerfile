@@ -8,9 +8,9 @@ ENV PYTHONUNBUFFERED=1 \
 # Create a non-root user for better security
 RUN adduser --disabled-password --gecos '' appuser
 
-# Create directory for Playwright browsers and set permissions
+# Create the Playwright browsers directory and set permissions
 RUN mkdir -p /ms-playwright-browsers && \
-    chown -R appuser:appuser /ms-playwright-browsers
+    chmod -R 777 /ms-playwright-browsers
 
 # Copy .env file
 COPY .env /app/.env
@@ -58,7 +58,7 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright and its dependencies as root
+# Install Playwright and its dependencies
 RUN pip install playwright && playwright install --with-deps
 
 # Change to the non-root user
