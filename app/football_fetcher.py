@@ -19,6 +19,7 @@ def fetch_all_matches(league_url):
 
         print(f"Navigating to league: {league_url}")
         page.goto(league_url, timeout=60000)
+        print("League page loaded successfully!")
 
         # Ensure the league page has loaded
         if "football" not in page.url:
@@ -30,10 +31,10 @@ def fetch_all_matches(league_url):
 
         try:
             # Wait for the parent container of matches
-            page.wait_for_selector('div[data-v-b8d70024] > div[id]', timeout=60000)
+            page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=60000)
 
             # Locate all match containers
-            match_containers = page.locator('div[data-v-b8d70024] > div[id]')
+            match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')
             match_count = match_containers.count()
             print(f"Found {match_count} match containers.")
 
