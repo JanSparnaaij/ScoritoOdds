@@ -19,6 +19,7 @@ def fetch_all_matches(league_url):
 
         print(f"Navigating to league: {league_url}")
         page.goto(league_url, timeout=60000)
+        print("League page loaded successfully!")
 
         # Ensure the league page has loaded
         if "football" not in page.url:
@@ -30,10 +31,10 @@ def fetch_all_matches(league_url):
 
         try:
             # Wait for the parent container of matches
-            page.wait_for_selector('div[data-v-b8d70024] > div[id]', timeout=60000)
+            page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=60000)
 
             # Locate all match containers
-            match_containers = page.locator('div[data-v-b8d70024] > div[id]')
+            match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')
             match_count = match_containers.count()
             print(f"Found {match_count} match containers.")
 
@@ -58,6 +59,13 @@ def fetch_all_matches(league_url):
 
                     # Extract odds
                     odds = container.locator('div[data-v-34474325] p')
+
+                    # Skip missing odds
+                    if not odds or odds.count() < 3:
+                        print(f"Skipping match {row_id} due to missing odds.")
+                        continue
+
+                    # extract odds
                     home_odd = odds.nth(0).text_content().strip()
                     draw_odd = odds.nth(1).text_content().strip()
                     away_odd = odds.nth(2).text_content().strip()
