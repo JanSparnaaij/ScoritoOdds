@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from app.football_fetcher import fetch_all_matches
-from app.tennis_fetcher import fetch_tennis_matches
 from app.player_ratings import PLAYER_RATINGS
 from app import cache, db
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
+from app.tennis_fetcher import fetch_combined_tennis_data
 
 # Blueprint for main routes
 main_bp = Blueprint('main', __name__)
@@ -101,7 +101,7 @@ def tennis():
         leagues=TENNIS_LEAGUES,
         selected_league=selected_league,
         selected_category=selected_category,
-        categories=["A", "B", "C", "D", "X", "all"],
+        categories=["A", "B", "C", "D", "all"],
     )
 
 # Routes for authentication
