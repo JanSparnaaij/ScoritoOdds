@@ -22,8 +22,10 @@ LEAGUES = {
 }
 
 TENNIS_LEAGUES = {
-    "atp_australian_open": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
-    "wta_australian_open": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
+    "atp_australian_open": {
+        "matches": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
+        "rounds": "https://www.oddsportal.com/tennis/australia/atp-australian-open/standings/",
+    },    "wta_australian_open": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
 }
 
 @main_bp.route('/')
@@ -60,23 +62,28 @@ def football():
 @main_bp.route('/tennis')
 def tennis():
     """Tennis page"""
-    # secret debug
-    # print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
+    # Ensure user is logged in
     if 'user_id' not in session:
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
 
+    # Get selected league and category from query parameters
     selected_league = request.args.get('league', 'atp_australian_open')
     selected_category = request.args.get('category', 'all')
-    url = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
+    league_urls = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
+    matches_url = league_urls['matches']
+    rounds_url = league_urls['rounds']
 
+    # Cache key to avoid redundant fetching
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
-        matches = fetch_tennis_matches(url, PLAYER_RATINGS)
+        # Fetch combined data (matches and rounds)
+        matches = fetch_combined_tennis_data(matches_url, rounds_url, PLAYER_RATINGS)
         cache.set(cache_key, matches)
 
+    # Filter matches by category if not 'all'
     if selected_category != 'all':
         matches = [
             match for match in matches
@@ -84,15 +91,17 @@ def tennis():
                match["players"]["player2_rating"] == selected_category
         ]
 
+    # Sort matches by highest expected points
     matches.sort(key=lambda x: max(x["expected_points"]["player1"], x["expected_points"]["player2"]), reverse=True)
 
+    # Render the template
     return render_template(
         'tennis.html',
         matches=matches,
         leagues=TENNIS_LEAGUES,
         selected_league=selected_league,
         selected_category=selected_category,
-        categories=["A", "B", "C", "D", "all"],
+        categories=["A", "B", "C", "D", "X", "all"],
     )
 
 # Routes for authentication
