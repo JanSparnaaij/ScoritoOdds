@@ -58,7 +58,7 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
+# Install Playwright and its dependencies as root
 RUN pip install playwright && playwright install --with-deps
 
 # Change to the non-root user
