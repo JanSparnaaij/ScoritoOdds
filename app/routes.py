@@ -43,6 +43,12 @@ def football():
         matches = fetch_all_matches(url)
         cache.set(cache_key, matches)
 
+    # Debugging: Check if matches is None
+    # Handle cases where matches are None or empty
+    if matches is None or len(matches) == 0:
+        flash("No matches could be fetched for the selected league.", "danger")
+        matches = []  # Pass an empty list to avoid breaking the template
+
     return render_template('football.html', matches=matches, leagues=LEAGUES, selected_league=selected_league)
 
 @main_bp.route('/tennis')
