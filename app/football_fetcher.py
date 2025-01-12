@@ -59,6 +59,13 @@ def fetch_all_matches(league_url):
 
                     # Extract odds
                     odds = container.locator('div[data-v-34474325] p')
+
+                    # Skip missing odds
+                    if not odds or odds.count() < 3:
+                        print(f"Skipping match {row_id} due to missing odds.")
+                        continue
+
+                    # extract odds
                     home_odd = odds.nth(0).text_content().strip()
                     draw_odd = odds.nth(1).text_content().strip()
                     away_odd = odds.nth(2).text_content().strip()
