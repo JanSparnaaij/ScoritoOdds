@@ -52,22 +52,22 @@
         {% for match in matches %}
         <tr>
             <!-- DateTime -->
-            <td>{{ match.datetime }}</td>
+            <td>{{ match.date }}</td>
 
             <!-- Round -->
-            <td>{{ match.round }}</td> <!-- Display Round -->
+            <td>{{ match.round }}</td>
 
             <!-- Player 1 Name and Category -->
             <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
                 {{ match.players.player1 }}
             </td>
-            <td>{{ match.players.player1_rating }}</td>
+            <td>{{ match.categories.player1 }}</td>
 
             <!-- Player 2 Name and Category -->
             <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
                 {{ match.players.player2 }}
             </td>
-            <td>{{ match.players.player2_rating }}</td>
+            <td>{{ match.categories.player2 }}</td>
 
             <!-- Odds -->
             <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
