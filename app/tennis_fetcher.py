@@ -49,7 +49,7 @@ def parse_tennis_matches(html_content):
         return 1 / odd
 
     def get_points_for_rating(rating):
-        return {"A": 10, "B": 20, "C": 30, "D": 60}.get(rating, 0)
+        return {"A": 20, "B": 40, "C": 60, "D": 90}.get(rating, 0)
 
     soup = BeautifulSoup(html_content, 'html.parser')
     matches = []
