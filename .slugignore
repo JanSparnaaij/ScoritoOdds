@@ -1,7 +1,0 @@
-*.log
-*.tmp
-node_modules
-__pycache__
-.apt/
-tmp/.apt
-tmp/tmp.*

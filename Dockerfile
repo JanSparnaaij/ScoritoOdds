@@ -71,4 +71,4 @@ USER appuser
 EXPOSE 8000
 
 # Run the application with Hypercorn
-CMD hypercorn --bind 0.0.0.0:$PORT --worker-class uvloop app:app
+CMD hypercorn --bind 0.0.0.0:$PORT --worker-class uvloop run:app
