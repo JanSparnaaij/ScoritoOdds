@@ -42,3 +42,4 @@ def create_app():
     celery.conf.update(app.config)
 
     return app
+    
