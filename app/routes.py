@@ -10,7 +10,7 @@ from app.tennis_fetcher import fetch_combined_tennis_data
 main_bp = Blueprint('main', __name__)
 
 LEAGUES = {
-    "eredivisie": "https://www.oddsportal.com/soccer/netherlands/eredivisie/",
+    "eredivisie": "https://www.oddsportal.com/football/netherlands/eredivisie/",
     "eerste_divisie": "https://www.oddsportal.com/football/netherlands/eerste-divisie/",
     "premier_league": "https://www.oddsportal.com/football/england/premier-league/",
     "jupiler_pro_league": "https://www.oddsportal.com/football/belgium/jupiler-pro-league/",
