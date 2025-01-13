@@ -60,9 +60,6 @@ USER appuser
 RUN pip install playwright \
     && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
 
-# Switch to non-root user
-
-
 # Expose port and run the app
 EXPOSE 8000
 CMD gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 120
