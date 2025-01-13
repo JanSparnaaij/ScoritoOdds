@@ -1,11 +1,19 @@
 from celery import Celery
+import os
 
 def create_celery_app(app=None):
+    """
+    Create and configure a Celery application instance.
+    Args:
+        app: Flask application instance (optional)
+    Returns:
+        Configured Celery instance
+    """
     celery = Celery(
-        app.import_name,
-        broker=app.config.get("CACHE_REDIS_URL"),
-        backend=app.config.get("CACHE_REDIS_URL"),
+        app.import_name if app else __name__,
+        broker=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),  # Broker URL
+        backend=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),  # Result backend
     )
     if app:
-        celery.conf.update(app.config)
+        celery.conf.update(app.config)  # Load Flask app configuration into Celery
     return celery
