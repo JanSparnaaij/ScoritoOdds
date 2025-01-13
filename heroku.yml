@@ -1,0 +1,8 @@
+build:
+  docker:
+    web: Dockerfile  # Use the Dockerfile to build the container
+release:
+  command:
+    - flask db upgrade  # Run database migrations (if needed)
+run:
+  web: hypercorn --bind 0.0.0.0:$PORT run:app  # Start the app
