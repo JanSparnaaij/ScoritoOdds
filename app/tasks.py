@@ -1,4 +1,4 @@
-from app.celery_worker import Celery
+from app.celery_worker import celery
 from app.football_fetcher import fetch_all_matches_async
 from app.tennis_fetcher import fetch_combined_tennis_data
 from app import cache
