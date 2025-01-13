@@ -55,12 +55,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright and its dependencies
+# Install Playwright and its dependencies as USER appuser
+USER appuser
 RUN pip install playwright \
     && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
 
 # Switch to non-root user
-USER appuser
+
 
 # Expose port and run the app
 EXPOSE 8000
