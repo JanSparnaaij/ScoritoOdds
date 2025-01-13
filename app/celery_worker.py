@@ -16,4 +16,8 @@ def create_celery_app(app=None):
     )
     if app:
         celery.conf.update(app.config)  # Load Flask app configuration into Celery
+        # Register tasks dynamically here to avoid circular import
+        with app.app_context():
+            from app import tasks  # Import tasks within the app context
+            celery.autodiscover_tasks(["app.tasks"])  # Register all tasks from app.tasks
     return celery
