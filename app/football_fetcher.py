@@ -86,5 +86,5 @@ async def fetch_all_matches_async(league_url):
 
         finally:
             # Ensure the browser is closed
-            if browser and not browser.is_closed():
+            if browser and browser.is_connected():
                 await browser.close()

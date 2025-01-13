@@ -23,11 +23,11 @@ def create_app():
     migrate.init_app(app, db)
     cache.init_app(app)
 
-    # Register blueprints
-    from app.routes import main_bp
-    from app.auth import auth_bp  # Import auth_bp
-    app.register_blueprint(main_bp)  # Register the main blueprint
-    app.register_blueprint(auth_bp, url_prefix='/auth')  # Register auth blueprint with a URL prefix
+    # Register blueprints after app is fully initialized
+    with app.app_context():
+        from app.routes import main_bp, auth_bp
+        app.register_blueprint(main_bp)
+        app.register_blueprint(auth_bp, url_prefix='/auth')
 
     # Attach Flask app context to Celery
     celery.conf.update(app.config)
