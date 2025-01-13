@@ -38,10 +38,9 @@ def home():
     return render_template('home.html')
 
 @main_bp.route('/football')
-def football():
+async def football():
     """Football page"""
-    # secret debug
-    # print(f"SECRET_KEY during request: {current_app.config.get('SECRET_KEY')}")
+    # User login check
     if 'user_id' not in session:
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
@@ -52,14 +51,18 @@ def football():
 
     if not matches:
         url = LEAGUES.get(selected_league, LEAGUES['eredivisie'])
-        matches = fetch_all_matches_async(url)
-        cache.set(cache_key, matches)
+        try:
+            # Await the async function to fetch matches
+            matches = await fetch_all_matches_async(url)
+            cache.set(cache_key, matches)  # Cache the result
+        except Exception as e:
+            current_app.logger.error(f"Error fetching matches: {e}")
+            flash("Unable to fetch matches at this time.", "danger")
+            matches = []
 
-    # Debugging: Check if matches is None
-    # Handle cases where matches are None or empty
-    if matches is None or len(matches) == 0:
+    # Handle empty matches gracefully
+    if not matches:
         flash("No matches could be fetched for the selected league.", "danger")
-        matches = []  # Pass an empty list to avoid breaking the template
 
     return render_template('football.html', matches=matches, leagues=LEAGUES, selected_league=selected_league)
 
