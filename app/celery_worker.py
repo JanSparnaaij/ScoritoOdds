@@ -22,9 +22,11 @@ def create_celery_app(app=None):
         with app.app_context():
             import app.tasks  # Import tasks explicitly
             celery.autodiscover_tasks(["app.tasks"])  # Auto-discover tasks in app.tasks
-    
-    return celery
 
+    # Explicitly discover tasks
+    celery.autodiscover_tasks(["app.tasks"])
+
+    return celery
 
 # Define a global Celery instance
 celery = create_celery_app()
