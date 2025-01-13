@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
-from app.football_fetcher import fetch_all_matches
+from app.football_fetcher import fetch_all_matches_async
 from app.player_ratings import PLAYER_RATINGS
 from app import cache, db
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -52,7 +52,7 @@ def football():
 
     if not matches:
         url = LEAGUES.get(selected_league, LEAGUES['eredivisie'])
-        matches = fetch_all_matches(url)
+        matches = fetch_all_matches_async(url)
         cache.set(cache_key, matches)
 
     # Debugging: Check if matches is None
