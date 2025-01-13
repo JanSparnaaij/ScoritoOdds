@@ -13,8 +13,6 @@ load_dotenv()
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
-
-# Initialize Flask-Caching
 cache = Cache()
 
 def create_app():
@@ -34,10 +32,6 @@ def create_app():
     migrate.init_app(app, db)
     cache.init_app(app)
 
-    # Add CLI commands for Flask-Migrate
-    from flask_migrate import MigrateCommand
-    app.cli.add_command(MigrateCommand, "db")
-
     # Register blueprints after app is fully initialized
     with app.app_context():
         from app.routes import main_bp, auth_bp
@@ -47,4 +41,4 @@ def create_app():
     # Attach Flask app context to Celery
     celery.conf.update(app.config)
 
-   
+    return app
