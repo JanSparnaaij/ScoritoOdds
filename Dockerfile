@@ -58,6 +58,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 RUN pip install playwright \
     && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
 
+# Switch to appuser
+RUN chown -R appuser:appuser /ms-playwright-browsers
+
 # Switch to the non-root user
 USER appuser
 
