@@ -7,10 +7,9 @@ ENV PYTHONUNBUFFERED=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
     PORT=8000  
 
-# Install system dependencies required by Playwright, Redis, and PostgreSQL
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    redis-server \
     gstreamer1.0-libav \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
@@ -23,7 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libenchant-2-2 \
     libpq-dev \
     gcc \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .  
@@ -40,5 +40,5 @@ COPY . /app
 # Expose the application port
 EXPOSE 8000
 
-# Start Redis in the background and the web application
-CMD ["sh", "-c", "redis-server --daemonize yes && flask db upgrade && hypercorn --bind 0.0.0.0:${PORT} run:app"]
+# Start the web application
+CMD ["sh", "-c", "flask db upgrade && hypercorn --bind 0.0.0.0:${PORT} run:app"]
