@@ -5,7 +5,8 @@ FROM python:3.10-slim
 ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
-    PORT=8000  
+    PORT=8000  \
+    FLASK_APP=run:app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
