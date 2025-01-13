@@ -5,7 +5,7 @@ class User(db.Model):
     """User Model"""
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
 
     def set_password(self, password):
         """Hash the user's password"""
