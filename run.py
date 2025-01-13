@@ -9,5 +9,8 @@ load_dotenv()
 app = create_app()
 
 if __name__ == "__main__":
-    from os import environ
-    app.run(debug=True)
+    # Get the PORT from the environment (Heroku sets this)
+    port = int(os.environ.get("PORT", 8000))
+    
+    # Run the app with dynamic port and production-ready host
+    app.run(host="0.0.0.0", port=port, debug=False)

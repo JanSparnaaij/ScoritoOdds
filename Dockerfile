@@ -58,6 +58,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 RUN pip install playwright \
     && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
 
+# Install Hypercorn
+RUN pip install hypercorn
+
 # Switch to appuser
 RUN chown -R appuser:appuser /ms-playwright-browsers
 
@@ -67,5 +70,5 @@ USER appuser
 # Expose the application port
 EXPOSE 8000
 
-# Run the application
-CMD gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 120
+# Run the application with Hypercorn
+CMD hypercorn --bind 0.0.0.0:8000 --worker-class uvloop app:create_app
