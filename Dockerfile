@@ -1,24 +1,25 @@
-# Base image
+# Base Python image
 FROM python:3.10-slim
 
-# Set environment variables for production
+# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
 
-# Create a non-root user for security
+# Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser
 
 # Create the Playwright browsers directory and set permissions
 RUN mkdir -p /ms-playwright-browsers && \
-    chmod -R 777 /ms-playwright-browsers && \
     chown -R appuser:appuser /ms-playwright-browsers
 
 # Set the working directory
 WORKDIR /app
+
+# Copy project files
 COPY . /app
 
-# Install Python dependencies
+# Install system dependencies required by Playwright
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gstreamer1.0-libav \
@@ -47,19 +48,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libxcomposite1 \
     libxrandr2 \
-    python3 \
-    python3-pip \
     && apt-get clean
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright and its dependencies as USER appuser
-USER appuser
+# Install Playwright as root and pre-install the browsers
 RUN pip install playwright \
     && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
 
-# Expose port and run the app
+# Switch to the non-root user
+USER appuser
+
+# Expose the application port
 EXPOSE 8000
+
+# Run the application
 CMD gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 120
