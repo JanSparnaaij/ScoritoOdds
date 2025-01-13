@@ -1,2 +1,3 @@
-release: rm -rf /tmp/build_* /tmp/tmp.* /tmp/.apt && playwright install
-web: rm -rf /tmp/build_* /tmp/tmp.* /tmp/.apt && hypercorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 120
+release: playwright install
+web: hypercorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 120
+worker: celery -A app.celery_worker worker --loglevel=info
