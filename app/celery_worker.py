@@ -14,10 +14,17 @@ def create_celery_app(app=None):
         broker=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),  # Broker URL
         backend=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),  # Result backend
     )
+
     if app:
         celery.conf.update(app.config)  # Load Flask app configuration into Celery
-        # Register tasks dynamically here to avoid circular import
+        
+        # Dynamically register tasks to avoid circular imports
         with app.app_context():
-            from app import tasks  # Import tasks within the app context
-            celery.autodiscover_tasks(["app.tasks"])  # Register all tasks from app.tasks
+            import app.tasks  # Import tasks explicitly
+            celery.autodiscover_tasks(["app.tasks"])  # Auto-discover tasks in app.tasks
+    
     return celery
+
+
+# Define a global Celery instance
+celery = create_celery_app()
