@@ -34,6 +34,10 @@ def create_app():
     migrate.init_app(app, db)
     cache.init_app(app)
 
+    # Add CLI commands for Flask-Migrate
+    from flask_migrate import MigrateCommand
+    app.cli.add_command(MigrateCommand, "db")
+
     # Register blueprints after app is fully initialized
     with app.app_context():
         from app.routes import main_bp, auth_bp
