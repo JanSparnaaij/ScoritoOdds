@@ -1,33 +1,31 @@
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 from flask import Flask, render_template, request, jsonify
 
 # Flask app setup
 app = Flask(__name__)
 
-def fetch_all_matches(league_url):
+async def fetch_all_matches_async(league_url):
     """
-    Fetch match details and odds for a specific league.
+    Asynchronously fetch match details and odds for a specific league.
     Args:
         league_url (str): URL of the league page on OddsPortal.
 
     Returns:
         list: List of dictionaries containing match details (team names, odds).
     """
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
 
         print(f"Navigating to league: {league_url}")
-        page.goto(league_url, timeout=60000)
+        await page.goto(league_url, timeout=60000)
         print("League page loaded successfully!")
 
         # Ensure the league page has loaded
         if "football" not in page.url:
             print(f"Failed to navigate to the league. Redirected to: {page.url}")
-            browser.close()
+            await browser.close()
             return None
-
-        print("League page loaded successfully!")
 
         try:
             # Wait for the parent container of matches
@@ -100,15 +98,15 @@ def index():
     return render_template('index.html')
 
 @app.route('/matches', methods=['POST'])
-def get_matches():
+async def get_matches():
     """
-    Fetch matches based on the selected league.
+    Fetch matches based on the selected league asynchronously.
     """
     country = request.form.get('country')
     league = request.form.get('league')
     league_url = f"https://www.oddsportal.com/football/{country}/{league}/"
 
-    matches = fetch_all_matches(league_url)
+    matches = await fetch_all_matches_async(league_url)
     if matches:
         return jsonify(matches)
     else:
