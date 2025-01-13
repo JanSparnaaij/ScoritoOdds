@@ -10,7 +10,8 @@ RUN adduser --disabled-password --gecos '' appuser
 
 # Create the Playwright browsers directory and set permissions
 RUN mkdir -p /ms-playwright-browsers && \
-    chmod -R 777 /ms-playwright-browsers
+    chmod -R 777 /ms-playwright-browsers && \
+    chown -R appuser:appuser /ms-playwright-browsers
 
 # Copy .env file
 COPY .env /app/.env
