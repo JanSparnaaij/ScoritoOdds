@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libatk1.0-0 \
     libatspi2.0-0 \
     libenchant-2-2 \
+    libpq-dev \
+    gcc \
     && apt-get clean
 
 # Install Python dependencies
