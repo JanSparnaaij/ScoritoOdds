@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean
 
 # Install Python dependencies
-COPY requirements.txt .  # Copy requirements before application files for caching
+COPY requirements.txt .  
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright and its dependencies
