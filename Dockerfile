@@ -4,7 +4,8 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
+    PORT=8000  
 
 # Install system dependencies required by Playwright and Redis Python client
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -37,5 +38,5 @@ COPY . /app
 # Expose the application port
 EXPOSE 8000
 
-# Start the Redis server and run the application
-CMD ["sh", "-c", "redis-server & hypercorn --bind 0.0.0.0:$PORT run:app"]
+# Start Redis as a background process and the web application
+CMD ["sh", "-c", "redis-server --daemonize yes && hypercorn --bind 0.0.0.0:${PORT} app:create_app()"]
