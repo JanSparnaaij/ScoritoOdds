@@ -5,6 +5,7 @@ from app.player_ratings import PLAYER_RATINGS
 from app import cache, db
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
+from app.tasks import fetch_matches_in_background, fetch_tennis_matches_in_background
 import re
 
 # Blueprint for main routes
@@ -54,16 +55,10 @@ async def football():
     matches = cache.get(cache_key)
 
     if not matches:
-        url = LEAGUES.get(selected_league, LEAGUES['eredivisie'])
-        try:
-            matches = await fetch_all_matches_async(url)
-            cache.set(cache_key, matches, timeout=3600)
-        except Exception as e:
-            current_app.logger.error(f"Error fetching matches: {e}")
-            flash("Unable to fetch matches at this time.", "danger")
-            matches = []
+        flash("Data is being fetched; check back shortly.", "info")
+        fetch_matches_in_background.delay(selected_league)  # Queue task
 
-    return render_template('football.html', matches=matches, leagues=LEAGUES, selected_league=selected_league)
+    return render_template('football.html', matches=matches or [], leagues=LEAGUES, selected_league=selected_league)
 
 # Tennis Page
 @main_bp.route('/tennis')
@@ -74,30 +69,14 @@ async def tennis():
         return redirect(url_for('auth.login'))
 
     selected_league = request.args.get('league', 'atp_australian_open')
-    selected_category = request.args.get('category', 'all')
-    league_urls = TENNIS_LEAGUES.get(selected_league, TENNIS_LEAGUES['atp_australian_open'])
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
-        try:
-            matches = await fetch_combined_tennis_data(league_urls['matches'], league_urls['rounds'])
-            cache.set(cache_key, matches, timeout=3600)
-        except Exception as e:
-            current_app.logger.error(f"Error fetching tennis matches: {e}")
-            flash("Unable to fetch tennis data at this time.", "danger")
-            matches = []
+        flash("Data is being fetched; check back shortly.", "info")
+        fetch_tennis_matches_in_background.delay(selected_league)  # Queue task
 
-    if selected_category != 'all':
-        matches = [
-            match for match in matches
-            if match.get("ratings", {}).get("player1") == selected_category or
-               match.get("ratings", {}).get("player2") == selected_category
-        ]
-
-    return render_template('tennis.html', matches=matches, leagues=TENNIS_LEAGUES,
-                           selected_league=selected_league, selected_category=selected_category,
-                           categories=["A", "B", "C", "D", "all"])
+    return render_template('tennis.html', matches=matches or [], leagues=TENNIS_LEAGUES, selected_league=selected_league)
 
 # Login Route
 @auth_bp.route('/login', methods=['GET', 'POST'])

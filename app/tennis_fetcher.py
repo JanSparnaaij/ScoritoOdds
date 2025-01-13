@@ -12,7 +12,7 @@ async def fetch_html_content(url):
         page = await browser.new_page()
         try:
             print(f"Fetching content from: {url}")
-            await page.goto(url, timeout=60000)
+            await page.goto(url, timeout=20000)
             html_content = await page.content()
             return html_content
         except Exception as e:
