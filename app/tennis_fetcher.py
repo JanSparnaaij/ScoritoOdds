@@ -1,118 +1,91 @@
-from app.player_ratings import PLAYER_RATINGS
-from playwright.async_api import async_playwright
+import logging
+import requests
 from bs4 import BeautifulSoup
+from app.player_ratings import PLAYER_RATINGS
 
+# Configure logging
+logging.basicConfig(level=logging.WARNING)
+logger = logging.getLogger("TennisFetcher")
 
-async def fetch_html_content(url):
+def fetch_combined_tennis_data(matches_url, rounds_url):
     """
-    Fetch HTML content from the given URL using async Playwright.
-    """
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-        try:
-            print(f"Fetching content from: {url}")
-            await page.goto(url, timeout=20000)
-            html_content = await page.content()
-            return html_content
-        except Exception as e:
-            print(f"Error fetching content: {e}")
-            return None
-        finally:
-            await browser.close()
+    Fetch combined tennis data from matches and rounds URLs.
 
+    Args:
+        matches_url (str): URL for the match data.
+        rounds_url (str): URL for the round data.
 
-def parse_tennis_rounds(html_content):
+    Returns:
+        list: A list of dictionaries containing match data.
     """
-    Parse tennis rounds from HTML content using BeautifulSoup.
-    """
-    soup = BeautifulSoup(html_content, 'html.parser')
-    rounds = []
-    for round_div in soup.select('div.round'):
-        round_name = round_div.get('class', [])[1] if len(round_div.get('class', [])) > 1 else "Unknown"
-        for match_div in round_div.select('div.match'):
+    match_data = []
+
+    try:
+        # Fetch round data
+        logger.warning(f"Fetching content from: {rounds_url}")
+        rounds_response = requests.get(rounds_url)
+        rounds_soup = BeautifulSoup(rounds_response.content, "html.parser")
+
+        # Extract round names (update CSS selectors as necessary)
+        rounds = rounds_soup.select(".round-name-selector")  # Placeholder selector
+        round_names = [round_.text.strip() for round_ in rounds if round_.text]
+        logger.info(f"Extracted rounds: {round_names}")
+    except Exception as e:
+        logger.error(f"Failed to fetch or parse round data: {e}")
+        round_names = []
+
+    try:
+        # Fetch match data
+        logger.warning(f"Fetching content from: {matches_url}")
+        matches_response = requests.get(matches_url)
+        matches_soup = BeautifulSoup(matches_response.content, "html.parser")
+
+        # Extract match containers (update CSS selectors as necessary)
+        match_containers = matches_soup.select(".match-container-selector")  # Placeholder selector
+
+        for match in match_containers:
             try:
-                player1 = match_div.select_one('span.participant.home .name').text.strip()
-                player2 = match_div.select_one('span.participant.away .name').text.strip()
-                date = match_div.select_one('span.date').text.strip()
-                rounds.append({'round': round_name, 'player1': player1, 'player2': player2, 'date': date})
-            except Exception as e:
-                print(f"Error parsing round match: {e}")
-    return rounds
+                player1 = match.select_one(".player1-name-selector").text.strip()
+                player2 = match.select_one(".player2-name-selector").text.strip()
 
+                odds_player1 = match.select_one(".player1-odds-selector").text.strip()
+                odds_player2 = match.select_one(".player2-odds-selector").text.strip()
 
-def parse_tennis_matches(html_content):
-    """
-    Parse tennis matches from HTML content using BeautifulSoup and include player ratings.
-    """
-    def calculate_win_probability(odd):
-        return 1 / odd
+                odds_player1 = float(odds_player1) if odds_player1 else None
+                odds_player2 = float(odds_player2) if odds_player2 else None
 
-    def get_points_for_rating(rating):
-        return {"A": 20, "B": 40, "C": 60, "D": 90}.get(rating, 0)
+                probabilities = {
+                    "player1": round(100 / odds_player1, 2) if odds_player1 else None,
+                    "player2": round(100 / odds_player2, 2) if odds_player2 else None,
+                }
 
-    soup = BeautifulSoup(html_content, 'html.parser')
-    matches = []
-    for match_div in soup.select('div[data-v-b8d70024] > div[id]'):
-        try:
-            player1 = match_div.select_one('a[title]').text.strip()
-            player2 = match_div.select('a[title]')[1].text.strip()
-            odds = [float(od.text.strip()) for od in match_div.select('div[data-v-34474325] p')]
+                match_info = {
+                    "players": {
+                        "player1": player1,
+                        "player2": player2,
+                    },
+                    "odds": {
+                        "player1": odds_player1,
+                        "player2": odds_player2,
+                    },
+                    "probabilities": probabilities,
+                    "ratings": {
+                        "player1": PLAYER_RATINGS.get(player1, "Unknown"),
+                        "player2": PLAYER_RATINGS.get(player2, "Unknown"),
+                    },
+                    "round": "Unknown",  # Default round value, updated below
+                    "date": "Unknown",  # Placeholder for date if available
+                }
 
-            if len(odds) < 2:
-                print(f"Skipping match due to missing odds.")
-                continue
+                # Assign round names if available
+                if round_names:
+                    match_info["round"] = round_names.pop(0) if round_names else "Unknown"
 
-            # Calculate probabilities
-            player1_prob = calculate_win_probability(odds[0])
-            player2_prob = calculate_win_probability(odds[1])
-            total_prob = player1_prob + player2_prob
-            player1_prob /= total_prob
-            player2_prob /= total_prob
+                match_data.append(match_info)
 
-            # Get player ratings
-            player1_rating = PLAYER_RATINGS.get(player1, "X")
-            player2_rating = PLAYER_RATINGS.get(player2, "X")
+            except Exception as match_error:
+                logger.warning(f"Error parsing match: {match_error}")
+    except Exception as e:
+        logger.error(f"Failed to fetch or parse match data: {e}")
 
-            # Calculate expected points
-            player1_expected_points = round(player1_prob * get_points_for_rating(player1_rating), 2)
-            player2_expected_points = round(player2_prob * get_points_for_rating(player2_rating), 2)
-
-            matches.append({
-                "players": {"player1": player1, "player2": player2},
-                "odds": {"player1": odds[0], "player2": odds[1]},
-                "probabilities": {"player1": round(player1_prob * 100, 2), "player2": round(player2_prob * 100, 2)},
-                "expected_points": {"player1": player1_expected_points, "player2": player2_expected_points},
-                "ratings": {"player1": player1_rating, "player2": player2_rating},
-            })
-        except Exception as e:
-            print(f"Error parsing match: {e}")
-    return matches
-
-
-async def fetch_combined_tennis_data(matches_url, rounds_url):
-    """
-    Fetch and parse combined tennis data asynchronously.
-    """
-    rounds_html = await fetch_html_content(rounds_url)
-    matches_html = await fetch_html_content(matches_url)
-
-    rounds = parse_tennis_rounds(rounds_html) if rounds_html else []
-    matches = parse_tennis_matches(matches_html) if matches_html else []
-
-    # Merge rounds into matches
-    for match in matches:
-        for round_match in rounds:
-            if (
-                match["players"]["player1"] == round_match["player1"]
-                and match["players"]["player2"] == round_match["player2"]
-                and match.get("date") == round_match.get("date")
-            ):
-                match["round"] = round_match["round"]
-                match["date"] = round_match["date"]
-                break
-        else:
-            match["round"] = "Unknown"
-            match["date"] = "Unknown"
-
-    return matches
+    return match_data

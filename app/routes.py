@@ -3,11 +3,16 @@ from app.player_ratings import PLAYER_RATINGS
 from app import cache, db
 from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
+from blinker import signal  
 import re
 
 # Blueprint for main routes
 main_bp = Blueprint('main', __name__)
 auth_bp = Blueprint('auth', __name__)
+
+# Signal definitions
+fetch_tennis_signal = signal('fetch-tennis')
+fetch_football_signal = signal('fetch-football')
 
 # League URLs
 LEAGUES = {
@@ -43,12 +48,10 @@ async def football():
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
-        from app.tasks import fetch_matches_in_background
-        fetch_matches_in_background.delay(selected_league)  # Queue task
+        fetch_football_signal.send(current_app._get_current_object(), league=selected_league)  # Trigger signal
 
     return render_template('football.html', matches=matches or [], leagues=LEAGUES, selected_league=selected_league)
 
-# Tennis Page
 @main_bp.route('/tennis')
 async def tennis():
     """Tennis page"""
@@ -57,15 +60,37 @@ async def tennis():
         return redirect(url_for('auth.login'))
 
     selected_league = request.args.get('league', 'atp_australian_open')
+    selected_category = request.args.get('category', 'all')
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
-        from app.tasks import fetch_tennis_matches_in_background
-        fetch_tennis_matches_in_background.delay(selected_league)  # Queue task
+        fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)  # Trigger signal
 
-    return render_template('tennis.html', matches=matches or [], leagues=TENNIS_LEAGUES, selected_league=selected_league)
+    # Add categories based on PLAYER_RATINGS
+    categories = set(PLAYER_RATINGS.values())
+    matches_with_categories = []
+    for match in matches:
+        match["categories"] = {
+            "player1": PLAYER_RATINGS.get(match["players"]["player1"], "Unknown"),
+            "player2": PLAYER_RATINGS.get(match["players"]["player2"], "Unknown"),
+        }
+        if (
+            selected_category == "all"
+            or match["categories"]["player1"] == selected_category
+            or match["categories"]["player2"] == selected_category
+        ):
+            matches_with_categories.append(match)
+
+    return render_template(
+        "tennis.html",
+        matches=matches_with_categories,
+        leagues=TENNIS_LEAGUES,
+        selected_league=selected_league,
+        categories=categories,
+        selected_category=selected_category,
+    )
 
 # Login Route
 @auth_bp.route('/login', methods=['GET', 'POST'])
