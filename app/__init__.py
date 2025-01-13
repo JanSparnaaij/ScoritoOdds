@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 from flask_migrate import Migrate
 from dotenv import load_dotenv
-from app.celery_worker import create_celery_app
+from app.celery_worker import celery
 
 # Load environment variables
 load_dotenv()
@@ -30,7 +30,6 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/auth')  # Register auth blueprint with a URL prefix
 
     # Attach Flask app context to Celery
-    celery = create_celery_app(app)
-    app.extensions["celery"] = celery
+    celery.conf.update(app.config)
 
     return app

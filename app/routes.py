@@ -40,7 +40,10 @@ async def football():
 
     selected_league = request.args.get('league', 'eredivisie')
     cache_key = f"matches_{selected_league}"
+    
+    current_app.logger.debug(f"Fetching cache for key: {cache_key}")
     matches = cache.get(cache_key)
+    current_app.logger.debug(f"Cache returned: {matches}")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
