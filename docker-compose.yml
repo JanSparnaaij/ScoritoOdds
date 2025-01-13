@@ -6,8 +6,6 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgres://u5n1r0okqlgr9m:p504d2830a6b63d716424a472a3f28685b558272982eede6e3d8752e511f3afe8@cd1goc44htrmfn.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d307p6e4nkqktl
-      - REDIS_URL=rediss://:pd0b34a6a19e46593bffc8b735ba51e0527546f14206207a0559ed66166173f0c@ec2-3-226-89-44.compute-1.amazonaws.com:14790
       - PORT=8000
     env_file:
       - .env
