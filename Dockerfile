@@ -1,3 +1,4 @@
+# Base image
 FROM python:3.10-slim
 
 # Set environment variables for production
@@ -5,7 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
 
-# Create a non-root user for better security
+# Create a non-root user for security
 RUN adduser --disabled-password --gecos '' appuser
 
 # Create the Playwright browsers directory and set permissions
@@ -13,17 +14,12 @@ RUN mkdir -p /ms-playwright-browsers && \
     chmod -R 777 /ms-playwright-browsers && \
     chown -R appuser:appuser /ms-playwright-browsers
 
-# Copy .env file
-COPY .env /app/.env
-
-# Set the working directory and other configurations
+# Set the working directory
 WORKDIR /app
 COPY . /app
-ENV FLASK_ENV=production
 
-# Install Python and other dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends --fix-missing \
+# Install Python dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gstreamer1.0-libav \
     gstreamer1.0-plugins-bad \
@@ -60,9 +56,10 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright and its dependencies
-RUN pip install playwright && playwright install --with-deps
+RUN pip install playwright \
+    && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
 
-# Change to the non-root user
+# Switch to non-root user
 USER appuser
 
 # Expose port and run the app
