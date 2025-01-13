@@ -9,6 +9,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Install system dependencies required by Playwright and Redis Python client
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    redis-server \
     gstreamer1.0-libav \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
@@ -36,5 +37,5 @@ COPY . /app
 # Expose the application port
 EXPOSE 8000
 
-# Run the application with Hypercorn
-CMD ["sh", "-c", "hypercorn --bind 0.0.0.0:$PORT run:app"]
+# Start the Redis server and run the application
+CMD ["sh", "-c", "redis-server & hypercorn --bind 0.0.0.0:$PORT run:app"]
