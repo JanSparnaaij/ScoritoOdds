@@ -1,0 +1,28 @@
+# Login to Heroku and Container Registry
+heroku login
+heroku container:login
+
+# Build and push Docker image
+heroku container:push web -a scoritoodds
+
+# Release the image
+heroku container:release web -a scoritoodds
+
+# Set environment variables
+heroku config:set FLASK_ENV=production PORT=8000 PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers -a scoritoodds
+
+# Scale the app
+heroku ps:scale web=1 -a scoritoodds
+
+# View logs for debugging
+heroku logs --tail -a scoritoodds
+
+# Open the app
+heroku open -a scoritoodds
+
+# Visit your app
+# https://scoritoodds.herokuapp.com
+
+heroku config:set SECRET_KEY=your-secret-key
+heroku config:set DATABASE_URL=sqlite:///site.db  # Replace with your actual database URL
+heroku config:set REDIS_URL=redis://localhost:6379/0  # Replace with actual Redis URL
