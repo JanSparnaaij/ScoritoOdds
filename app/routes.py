@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.player_ratings import PLAYER_RATINGS
 from app import cache, db
 from app.models import User
-from app.tasks import fetch_matches_in_background, fetch_tennis_matches_in_background
 from werkzeug.security import generate_password_hash, check_password_hash
 import re
 
@@ -40,13 +39,11 @@ async def football():
 
     selected_league = request.args.get('league', 'eredivisie')
     cache_key = f"matches_{selected_league}"
-    
-    current_app.logger.debug(f"Fetching cache for key: {cache_key}")
     matches = cache.get(cache_key)
-    current_app.logger.debug(f"Cache returned: {matches}")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
+        from app.tasks import fetch_matches_in_background
         fetch_matches_in_background.delay(selected_league)  # Queue task
 
     return render_template('football.html', matches=matches or [], leagues=LEAGUES, selected_league=selected_league)
@@ -65,6 +62,7 @@ async def tennis():
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
+        from app.tasks import fetch_tennis_matches_in_background
         fetch_tennis_matches_in_background.delay(selected_league)  # Queue task
 
     return render_template('tennis.html', matches=matches or [], leagues=TENNIS_LEAGUES, selected_league=selected_league)
