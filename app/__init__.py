@@ -4,6 +4,8 @@ from flask_caching import Cache
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from app.celery_worker import celery
+import os
+from redis import Redis
 
 # Load environment variables
 load_dotenv()
@@ -11,12 +13,21 @@ load_dotenv()
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
-cache = Cache(config={"CACHE_TYPE": "RedisCache"})
+
+# Initialize Flask-Caching
+cache = Cache()
 
 def create_app():
     """Application Factory"""
     app = Flask(__name__)
     app.config.from_object("config.Config")
+
+    # Configure Redis with SSL options if REDIS_URL is provided
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        redis_client = Redis.from_url(redis_url, ssl_cert_reqs=None)
+        app.config["CACHE_TYPE"] = "RedisCache"
+        app.config["CACHE_REDIS_CLIENT"] = redis_client
 
     # Initialize extensions
     db.init_app(app)
@@ -32,4 +43,4 @@ def create_app():
     # Attach Flask app context to Celery
     celery.conf.update(app.config)
 
-    return app
+   
