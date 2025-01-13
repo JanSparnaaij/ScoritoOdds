@@ -1,91 +1,169 @@
-import logging
-import requests
-from bs4 import BeautifulSoup
 from app.player_ratings import PLAYER_RATINGS
+from playwright.sync_api import sync_playwright
+from bs4 import BeautifulSoup
 
-# Configure logging
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger("TennisFetcher")
 
-def fetch_combined_tennis_data(matches_url, rounds_url):
+def fetch_tennis_rounds(rounds_url):
     """
-    Fetch combined tennis data from matches and rounds URLs.
-
-    Args:
-        matches_url (str): URL for the match data.
-        rounds_url (str): URL for the round data.
-
-    Returns:
-        list: A list of dictionaries containing match data.
+    Fetch and parse tennis rounds from the standings page.
     """
-    match_data = []
+    def parse_rounds(html_content):
+        soup = BeautifulSoup(html_content, 'html.parser')
+        rounds = []
 
-    try:
-        # Fetch round data
-        logger.warning(f"Fetching content from: {rounds_url}")
-        rounds_response = requests.get(rounds_url)
-        rounds_soup = BeautifulSoup(rounds_response.content, "html.parser")
+        # Parse round containers
+        for round_div in soup.select('div.round'):
+            round_name = "Unknown"
+            if len(round_div.get('class', [])) > 1:
+                round_name = round_div['class'][1]
 
-        # Extract round names (update CSS selectors as necessary)
-        rounds = rounds_soup.select(".round-name-selector")  # Placeholder selector
-        round_names = [round_.text.strip() for round_ in rounds if round_.text]
-        logger.info(f"Extracted rounds: {round_names}")
-    except Exception as e:
-        logger.error(f"Failed to fetch or parse round data: {e}")
-        round_names = []
+            # Parse matches in this round
+            for match_div in round_div.select('div.match'):
+                try:
+                    player1 = match_div.select_one('span.participant.home .name')
+                    player2 = match_div.select_one('span.participant.away .name')
+                    match_key = match_div.select_one('a.match-detail-link')
+                    date = match_div.select_one('span.date')
 
-    try:
-        # Fetch match data
-        logger.warning(f"Fetching content from: {matches_url}")
-        matches_response = requests.get(matches_url)
-        matches_soup = BeautifulSoup(matches_response.content, "html.parser")
+                    player1_category = player1.select_one('span.codebook').text.strip() if player1.select_one(
+                        'span.codebook') else "N/A"
+                    player2_category = player2.select_one('span.codebook').text.strip() if player2.select_one(
+                        'span.codebook') else "N/A"
 
-        # Extract match containers (update CSS selectors as necessary)
-        match_containers = matches_soup.select(".match-container-selector")  # Placeholder selector
+                    if not all([player1, player2, match_key, date]):
+                        continue
 
-        for match in match_containers:
-            try:
-                player1 = match.select_one(".player1-name-selector").text.strip()
-                player2 = match.select_one(".player2-name-selector").text.strip()
+                    rounds.append({
+                        'round': round_name,
+                        'player1': player1.text.strip(),
+                        'player2': player2.text.strip(),
+                        'player1_category': player1_category,
+                        'player2_category': player2_category,
+                        'date': date.text.strip(),
+                    })
+                except Exception as e:
+                    print(f"Error parsing match: {e}")
+                    continue
 
-                odds_player1 = match.select_one(".player1-odds-selector").text.strip()
-                odds_player2 = match.select_one(".player2-odds-selector").text.strip()
+        return rounds
 
-                odds_player1 = float(odds_player1) if odds_player1 else None
-                odds_player2 = float(odds_player2) if odds_player2 else None
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-                probabilities = {
-                    "player1": round(100 / odds_player1, 2) if odds_player1 else None,
-                    "player2": round(100 / odds_player2, 2) if odds_player2 else None,
+        print(f"Fetching rounds from: {rounds_url}")
+        page.goto(rounds_url)
+
+        try:
+            page.wait_for_selector('div.round', timeout=60000)
+            html_content = page.content()
+            rounds = parse_rounds(html_content)
+            browser.close()
+            return rounds
+        except Exception as e:
+            print(f"Error fetching rounds: {e}")
+            browser.close()
+            return []
+
+
+def fetch_tennis_matches(matches_url):
+    """
+    Fetch matches and their details from the main matches page.
+    """
+    def calculate_win_probability(odd):
+        return 1 / odd
+
+    def get_points_for_rating(rating):
+        return {"A": 10, "B": 20, "C": 30, "D": 60}.get(rating, 0)
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        print(f"Fetching matches from: {matches_url}")
+        page.goto(matches_url)
+
+        try:
+            page.wait_for_selector('div[data-v-b8d70024] > div[id]', timeout=60000)
+            match_containers = page.locator('div[data-v-b8d70024] > div[id]')
+            matches = []
+
+            for i in range(match_containers.count()):
+                try:
+                    container = match_containers.nth(i)
+                    player1 = container.locator('a[title]').nth(0).text_content().strip()
+                    player2 = container.locator('a[title]').nth(1).text_content().strip()
+
+                    odds = container.locator('div[data-v-34474325] p')
+                    player1_odd = float(odds.nth(0).text_content().strip())
+                    player2_odd = float(odds.nth(1).text_content().strip())
+
+                    player1_prob = calculate_win_probability(player1_odd)
+                    player2_prob = calculate_win_probability(player2_odd)
+                    total_prob = player1_prob + player2_prob
+                    player1_prob /= total_prob
+                    player2_prob /= total_prob
+
+                    player1_rating = PLAYER_RATINGS.get(player1, "X")
+                    player2_rating = PLAYER_RATINGS.get(player2, "X")
+
+                    player1_expected_points = round(player1_prob * get_points_for_rating(player1_rating), 2)
+                    player2_expected_points = round(player2_prob * get_points_for_rating(player2_rating), 2)
+
+                    matches.append({
+                        "match_key": f"{player1} vs {player2}",
+                        "players": {"player1": player1, "player2": player2},
+                        "odds": {"player1": player1_odd, "player2": player2_odd},
+                        "probabilities": {"player1": round(player1_prob * 100, 2), "player2": round(player2_prob * 100, 2)},
+                        "expected_points": {"player1": player1_expected_points, "player2": player2_expected_points},
+                        "ratings": {"player1": player1_rating, "player2": player2_rating},
+                    })
+                except Exception as e:
+                    print(f"Error processing match: {e}")
+                    continue
+
+            browser.close()
+            return matches
+        except Exception as e:
+            print(f"Error fetching matches: {e}")
+            browser.close()
+            return []
+
+
+def fetch_combined_tennis_data(matches_url, rounds_url, PLAYER_RATINGS):
+    """
+    Fetch combined tennis data with matches, rounds, and player categories.
+    """
+    # Fetch rounds and matches
+    rounds = fetch_tennis_rounds(rounds_url)
+    matches = fetch_tennis_matches(matches_url)
+
+    # Merge rounds into matches
+    for match in matches:
+        for round_match in rounds:
+            if (match["players"]["player1"] == round_match["player1"] and
+                match["players"]["player2"] == round_match["player2"] and
+                match.get("date") == round_match["date"]):
+                match["round"] = round_match["round"]
+                match["date"] = round_match["date"]
+                match["categories"] = {
+                    "player1": PLAYER_RATINGS.get(round_match["player1"], "N/A"),
+                    "player2": PLAYER_RATINGS.get(round_match["player2"], "N/A"),
                 }
+                break
+        else:
+            match["round"] = "Unknown"
+            match["categories"] = {
+                "player1": PLAYER_RATINGS.get(match["players"]["player1"], "N/A"),
+                "player2": PLAYER_RATINGS.get(match["players"]["player2"], "N/A"),
+            }
 
-                match_info = {
-                    "players": {
-                        "player1": player1,
-                        "player2": player2,
-                    },
-                    "odds": {
-                        "player1": odds_player1,
-                        "player2": odds_player2,
-                    },
-                    "probabilities": probabilities,
-                    "ratings": {
-                        "player1": PLAYER_RATINGS.get(player1, "Unknown"),
-                        "player2": PLAYER_RATINGS.get(player2, "Unknown"),
-                    },
-                    "round": "Unknown",  # Default round value, updated below
-                    "date": "Unknown",  # Placeholder for date if available
-                }
+    return matches
 
-                # Assign round names if available
-                if round_names:
-                    match_info["round"] = round_names.pop(0) if round_names else "Unknown"
 
-                match_data.append(match_info)
-
-            except Exception as match_error:
-                logger.warning(f"Error parsing match: {match_error}")
-    except Exception as e:
-        logger.error(f"Failed to fetch or parse match data: {e}")
-
-    return match_data
+if __name__ == "__main__":
+    matches_url = "https://example.com/matches"
+    rounds_url = "https://www.oddsportal.com/tennis/australia/atp-australian-open/standings/"
+    PLAYER_RATINGS = PLAYER_RATINGS
+    combined_data = fetch_combined_tennis_data(matches_url, rounds_url, PLAYER_RATINGS)
+    print(combined_data)

@@ -1,16 +1,29 @@
-# Base Python image
 FROM python:3.10-slim
 
-# Set environment variables
+# Set environment variables for production
 ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
-    PORT=8000  
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
 
-# Install system dependencies required by Playwright, Redis, and PostgreSQL
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Create a non-root user for better security
+RUN adduser --disabled-password --gecos '' appuser
+
+# Create the Playwright browsers directory and set permissions
+RUN mkdir -p /ms-playwright-browsers && \
+    chmod -R 777 /ms-playwright-browsers
+
+# Copy .env file
+COPY .env /app/.env
+
+# Set the working directory and other configurations
+WORKDIR /app
+COPY . /app
+ENV FLASK_ENV=production
+
+# Install Python and other dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends --fix-missing \
     curl \
-    redis-server \
     gstreamer1.0-libav \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
@@ -20,25 +33,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libatspi2.0-0 \
+    libavif-dev \
     libenchant-2-2 \
-    libpq-dev \
-    gcc \
+    libflite1 \
+    libgles2-mesa \
+    libgstreamer-plugins-base1.0-0 \
+    libgstreamer-gl1.0-0 \
+    libgstreamer1.0-0 \
+    libgtk-3-0 \
+    libhyphen0 \
+    libmanette-0.2-0 \
+    libsecret-1-0 \
+    libwoff1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxrandr2 \
+    python3 \
+    python3-pip \
     && apt-get clean
 
 # Install Python dependencies
-COPY requirements.txt .  
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright and its dependencies
-RUN pip install playwright \
-    && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
+RUN pip install playwright && playwright install --with-deps
 
-# Set working directory and copy application files
-WORKDIR /app
-COPY . /app
+# Change to the non-root user
+USER appuser
 
-# Expose the application port
+# Expose port and run the app
 EXPOSE 8000
-
-# Start Redis in the background and the web application
-CMD ["sh", "-c", "redis-server --daemonize yes && flask db upgrade && hypercorn --bind 0.0.0.0:${PORT} run:app"]
+CMD gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 120
