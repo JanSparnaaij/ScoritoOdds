@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
     PORT=8000  
 
-# Install system dependencies required by Playwright and Redis Python client
+# Install system dependencies required by Playwright and Redis
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     redis-server \
@@ -38,5 +38,5 @@ COPY . /app
 # Expose the application port
 EXPOSE 8000
 
-# Start Redis as a background process and the web application
-CMD ["sh", "-c", "redis-server --daemonize yes && hypercorn --bind 0.0.0.0:${PORT} app:create_app()"]
+# Start Redis in the background and the web application
+CMD ["sh", "-c", "redis-server --daemonize yes && hypercorn --bind 0.0.0.0:${PORT} run:app"]
