@@ -1,4 +1,5 @@
 import os
+import redis
 
 class Config:
     # General Flask Config
@@ -16,6 +17,10 @@ class Config:
     # Redis Caching
     CACHE_TYPE = "RedisCache"
     CACHE_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")  # Redis URL fallback
+    CACHE_OPTIONS = {
+        "connection_class": redis.StrictRedis,
+        "ssl_cert_reqs": None,  # Disable SSL certificate verification
+    }
 
     # Celery Configuration
     CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")  # Celery broker (Redis)
