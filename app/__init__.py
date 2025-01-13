@@ -6,6 +6,7 @@ from config import Config
 import subprocess
 from dotenv import load_dotenv
 import os
+from app.tasks import celery
 
 # Load environment variables
 load_dotenv()
