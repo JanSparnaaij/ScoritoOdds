@@ -18,7 +18,7 @@ async def fetch_all_matches_async(league_url):
             page = await browser.new_page()
 
             print(f"Navigating to league: {league_url}")
-            await page.goto(league_url, timeout=20000)
+            await page.goto(league_url, ex=20000)
             print("League page loaded successfully!")
 
             # Validate that the correct page is loaded
@@ -27,7 +27,7 @@ async def fetch_all_matches_async(league_url):
                 return None
 
             # Wait for the parent container of matches
-            await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=20000)
+            await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', ex=20000)
 
             # Locate all match containers
             match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')

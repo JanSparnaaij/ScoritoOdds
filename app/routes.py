@@ -72,9 +72,9 @@ async def tennis():
         fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)
         current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
         loading = True
+        matches = []
 
-
-    return render_template("tennis.html", matches=matches or [], leagues=TENNIS_LEAGUES, selected_league=selected_league, loading=loading)
+    return render_template("tennis.html", matches=matches, leagues=TENNIS_LEAGUES, selected_league=selected_league, loading=loading)
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
