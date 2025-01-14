@@ -6,7 +6,7 @@
 <!-- Dropdown for Selecting League -->
 <form method="get" action="/football">
     <label for="league">Select League:</label>
-    <select id="league" name="league" onchange="this.form.submit()">
+    <select id="league" name="league" onchange="showLoading(); this.form.submit()">
         {% for league, url in leagues.items() %}
         <option value="{{ league }}" {% if league == selected_league %}selected{% endif %}>
             {{ league.replace('_', ' ').title() }}
@@ -14,6 +14,9 @@
         {% endfor %}
     </select>
 </form>
+
+<!-- Loading Indicator -->
+<div id="loadingMessage" style="display:none;">Loading data, please wait...</div>
 
 <!-- Debugging Info -->
 {% if matches %}
@@ -55,4 +58,12 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+    function showLoading() {
+        document.getElementById("loadingMessage").style.display = "block";
+        document.getElementById("noDataMessage").style.display = "none";
+    }
+</script>
+
 {% endblock %}
