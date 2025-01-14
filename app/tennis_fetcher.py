@@ -1,6 +1,6 @@
 from playwright.async_api import async_playwright
 from app.player_ratings import PLAYER_RATINGS
-
+import asyncio
 
 async def fetch_tennis_matches_async(league_url):
     """
