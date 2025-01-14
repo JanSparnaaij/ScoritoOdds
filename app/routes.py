@@ -28,6 +28,37 @@ TENNIS_LEAGUES = {
     },
 }
 
+# Signal handlers
+def fetch_football_handler(sender, league):
+    """Handler for fetching football matches."""
+    current_app.logger.info(f"Fetching football data for league: {league}")
+    # Simulated data fetching logic; replace with actual API scraping
+    matches = [
+        {"home": "Ajax", "away": "PSV", "date": "2025-01-15", "odds": {"home": 1.5, "draw": 3.8, "away": 4.2}},
+        {"home": "Feyenoord", "away": "Twente", "date": "2025-01-16", "odds": {"home": 1.8, "draw": 3.6, "away": 3.9}},
+    ]
+    cache_key = f"matches_{league}"
+    cache.set(cache_key, matches)
+    current_app.logger.info(f"Cached football matches for {league}: {matches}")
+
+
+def fetch_tennis_handler(sender, league):
+    """Handler for fetching tennis matches."""
+    current_app.logger.info(f"Fetching tennis data for league: {league}")
+    # Simulated data fetching logic; replace with actual API scraping
+    matches = [
+        {"players": {"player1": "Novak Djokovic", "player2": "Carlos Alcaraz"}, "date": "2025-01-15"},
+        {"players": {"player1": "Rafael Nadal", "player2": "Roger Federer"}, "date": "2025-01-16"},
+    ]
+    cache_key = f"tennis_matches_{league}"
+    cache.set(cache_key, matches)
+    current_app.logger.info(f"Cached tennis matches for {league}: {matches}")
+
+
+# Connect signals to handlers
+fetch_football_signal.connect(fetch_football_handler)
+fetch_tennis_signal.connect(fetch_tennis_handler)
+
 # Homepage
 @main_bp.route("/")
 def home():
