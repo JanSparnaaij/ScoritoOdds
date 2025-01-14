@@ -46,6 +46,7 @@ async def football():
     selected_league = request.args.get("league", "eredivisie")
     cache_key = f"matches_{selected_league}"
     matches = cache.get(cache_key)
+    current_app.logger.info(f"Cache lookup for {cache_key}: {matches}")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
@@ -69,6 +70,7 @@ async def tennis():
     selected_category = request.args.get("category", "all")
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
+    current_app.logger.info(f"Cache lookup for {cache_key}: {matches}")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
