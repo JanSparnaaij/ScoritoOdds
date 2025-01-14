@@ -6,7 +6,7 @@
 <!-- League Selection Form -->
 <form method="get" action="/tennis">
     <label for="league">Select League:</label>
-    <select id="league" name="league" onchange="this.form.submit()">
+    <select id="league" name="league" onchange="showLoading(); this.form.submit()">
         {% for league, url in leagues.items() %}
         <option value="{{ league }}" {% if league == selected_league %}selected{% endif %}>
             {{ league.replace('_', ' ').title() }}
@@ -15,14 +15,20 @@
     </select>
 </form>
 
+<!-- Loading Indicator -->
+<div id="loadingMessage" class="{% if loading %}visible{% else %}hidden{% endif %}">
+    Loading data, please wait...
+</div>
+
 <!-- Debugging Info -->
-{% if matches %}
+{% if not loading and matches %}
     <p>{{ matches|length }} matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
-{% else %}
+{% elif not loading %}
     <p>No matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
 {% endif %}
 
 <!-- Table for Match Results -->
+{% if not loading %}
 <table>
     <thead>
         <tr>
@@ -41,33 +47,34 @@
     <tbody>
         {% for match in matches %}
         <tr>
-            <!-- DateTime -->
             <td>{{ match.date }}</td>
-            <!-- Round -->
             <td>{{ match.round }}</td>
-            <!-- Player 1 -->
             <td {% if match.odds.player1 | float < match.odds.player2 | float %}class="highlight"{% endif %}>
                 {{ match.players.player1 }}
             </td>
             <td>{{ match.categories.player1 }}</td>
-            <!-- Player 2 -->
             <td {% if match.odds.player2 | float < match.odds.player1 | float %}class="highlight"{% endif %}>
                 {{ match.players.player2 }}
             </td>
             <td>{{ match.categories.player2 }}</td>
-            <!-- Odds -->
             <td {% if match.odds.player1 | float < match.odds.player2 | float %}class="highlight"{% endif %}>
                 {{ match.odds.player1 }}
             </td>
             <td {% if match.odds.player2 | float < match.odds.player1 | float %}class="highlight"{% endif %}>
                 {{ match.odds.player2 }}
             </td>
-            <!-- Expected Points -->
             <td>{{ match.expected_points.player1 }}</td>
             <td>{{ match.expected_points.player2 }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+{% endif %}
 
+<script>
+    function showLoading() {
+        document.getElementById("loadingMessage").classList.add("visible");
+        document.getElementById("loadingMessage").classList.remove("hidden");
+    }
+</script>
 {% endblock %}
