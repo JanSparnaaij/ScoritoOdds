@@ -5,14 +5,16 @@ from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from blinker import signal
 import re
+import requests
+from bs4 import BeautifulSoup
 
-# Blueprints
-main_bp = Blueprint("main", __name__)
-auth_bp = Blueprint("auth", __name__)
+# Blueprint for main routes
+main_bp = Blueprint('main', __name__)
+auth_bp = Blueprint('auth', __name__)
 
 # Signal definitions
-fetch_tennis_signal = signal("fetch-tennis")
-fetch_football_signal = signal("fetch-football")
+fetch_tennis_signal = signal('fetch-tennis')
+fetch_football_signal = signal('fetch-football')
 
 # League URLs
 LEAGUES = {
@@ -24,165 +26,144 @@ LEAGUES = {
 TENNIS_LEAGUES = {
     "atp_australian_open": {
         "matches": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
-        "rounds": "https://www.oddsportal.com/tennis/australia/atp-australian-open/standings/",
     },
 }
 
-# Signal handlers
-def fetch_football_handler(sender, league):
-    """Handler for fetching football matches."""
-    current_app.logger.info(f"Fetching football data for league: {league}")
-    # Simulated data fetching logic; replace with actual API scraping
-    matches = [
-        {"home": "Ajax", "away": "PSV", "date": "2025-01-15", "odds": {"home": 1.5, "draw": 3.8, "away": 4.2}},
-        {"home": "Feyenoord", "away": "Twente", "date": "2025-01-16", "odds": {"home": 1.8, "draw": 3.6, "away": 3.9}},
-    ]
-    cache_key = f"matches_{league}"
-    cache.set(cache_key, matches)
-    current_app.logger.info(f"Cached football matches for {league}: {matches}")
+# Scraping Functions
+def scrape_football(league_url):
+    """Scrape football matches from the given league URL."""
+    try:
+        response = requests.get(league_url)
+        soup = BeautifulSoup(response.text, "html.parser")
 
+        matches = []
+        for match in soup.select(".match-row"):  # Update this selector to match the website's structure
+            home = match.select_one(".home-team").text.strip()
+            away = match.select_one(".away-team").text.strip()
+            date = match.select_one(".match-date").text.strip()
+            odds = {
+                "home": float(match.select_one(".home-odds").text.strip()),
+                "draw": float(match.select_one(".draw-odds").text.strip()),
+                "away": float(match.select_one(".away-odds").text.strip()),
+            }
+            matches.append({"home": home, "away": away, "date": date, "odds": odds})
 
-def fetch_tennis_handler(sender, league):
-    """Handler for fetching tennis matches."""
-    current_app.logger.info(f"Fetching tennis data for league: {league}")
-    # Simulated data fetching logic; replace with actual API scraping
-    matches = [
-        {"players": {"player1": "Novak Djokovic", "player2": "Carlos Alcaraz"}, "date": "2025-01-15"},
-        {"players": {"player1": "Rafael Nadal", "player2": "Roger Federer"}, "date": "2025-01-16"},
-    ]
-    cache_key = f"tennis_matches_{league}"
-    cache.set(cache_key, matches)
-    current_app.logger.info(f"Cached tennis matches for {league}: {matches}")
+        return matches
+    except Exception as e:
+        current_app.logger.error(f"Error scraping football data: {e}")
+        return []
 
+def scrape_tennis(league_url):
+    """Scrape tennis matches from the given league URL."""
+    try:
+        response = requests.get(league_url)
+        soup = BeautifulSoup(response.text, "html.parser")
 
-# Connect signals to handlers
-fetch_football_signal.connect(fetch_football_handler)
-fetch_tennis_signal.connect(fetch_tennis_handler)
+        matches = []
+        for match in soup.select(".match-row"):  # Update this selector to match the website's structure
+            players = {
+                "player1": match.select_one(".player1").text.strip(),
+                "player2": match.select_one(".player2").text.strip(),
+            }
+            date = match.select_one(".match-date").text.strip()
+            matches.append({"players": players, "date": date})
+
+        return matches
+    except Exception as e:
+        current_app.logger.error(f"Error scraping tennis data: {e}")
+        return []
+
+# Signal Handlers
+@fetch_football_signal.connect
+def handle_fetch_football(sender, league):
+    league_url = LEAGUES.get(league)
+    if league_url:
+        matches = scrape_football(league_url)
+        cache.set(f"matches_{league}", matches, timeout=3600)
+
+@fetch_tennis_signal.connect
+def handle_fetch_tennis(sender, league):
+    league_url = TENNIS_LEAGUES.get(league, {}).get("matches")
+    if league_url:
+        matches = scrape_tennis(league_url)
+        cache.set(f"tennis_matches_{league}", matches, timeout=3600)
 
 # Homepage
-@main_bp.route("/")
+@main_bp.route('/')
 def home():
     """Homepage"""
-    return render_template("home.html")
-
+    return render_template('home.html')
 
 # Football Page
-@main_bp.route("/football")
+@main_bp.route('/football')
 async def football():
     """Football page"""
-    if "user_id" not in session:
-        flash("Please log in to access this page.", "warning")
-        return redirect(url_for("auth.login"))
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('auth.login'))
 
-    selected_league = request.args.get("league", "eredivisie")
+    selected_league = request.args.get('league', 'eredivisie')
     cache_key = f"matches_{selected_league}"
     matches = cache.get(cache_key)
-    current_app.logger.info(f"Cache lookup for {cache_key}: {matches}")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_football_signal.send(current_app._get_current_object(), league=selected_league)
-        current_app.logger.info(f"Triggered football signal for league: {selected_league}")
 
-    return render_template(
-        "football.html", matches=matches or [], leagues=LEAGUES, selected_league=selected_league
-    )
-
+    return render_template('football.html', matches=matches or [], leagues=LEAGUES, selected_league=selected_league)
 
 # Tennis Page
-@main_bp.route("/tennis")
+@main_bp.route('/tennis')
 async def tennis():
     """Tennis page"""
-    if "user_id" not in session:
-        flash("Please log in to access this page.", "warning")
-        return redirect(url_for("auth.login"))
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('auth.login'))
 
-    selected_league = request.args.get("league", "atp_australian_open")
-    selected_category = request.args.get("category", "all")
+    selected_league = request.args.get('league', 'atp_australian_open')
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
-    current_app.logger.info(f"Cache lookup for {cache_key}: {matches}")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)
-        current_app.logger.info(f"Triggered tennis signal for league: {selected_league}")
-
-    # Add categories based on PLAYER_RATINGS
-    categories = set(PLAYER_RATINGS.values())
-    matches_with_categories = []
-    if matches:
-        for match in matches:
-            match["categories"] = {
-                "player1": PLAYER_RATINGS.get(match["players"]["player1"], "Unknown"),
-                "player2": PLAYER_RATINGS.get(match["players"]["player2"], "Unknown"),
-            }
-            if (
-                selected_category == "all"
-                or match["categories"]["player1"] == selected_category
-                or match["categories"]["player2"] == selected_category
-            ):
-                matches_with_categories.append(match)
 
     return render_template(
-        "tennis.html",
-        matches=matches_with_categories,
+        'tennis.html',
+        matches=matches or [],
         leagues=TENNIS_LEAGUES,
-        selected_league=selected_league,
-        categories=categories,
-        selected_category=selected_category,
+        selected_league=selected_league
     )
 
-
-# Login Route
-@auth_bp.route("/login", methods=["GET", "POST"])
+# The rest of the code remains unchanged
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Login page"""
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
             session.clear()
-            session["user_id"] = user.id
-            flash("Logged in successfully!", "success")
-            return redirect(url_for("main.home"))
+            session['user_id'] = user.id
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('main.home'))
         else:
-            flash("Invalid credentials. Please try again.", "danger")
+            flash('Invalid credentials. Please try again.', 'danger')
 
-    return render_template("login.html")
+    return render_template('login.html')
 
-
-# Signup Route
-@auth_bp.route("/signup", methods=["GET", "POST"])
+@auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     """Signup page"""
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
 
         if len(password) < 8 or not re.search(r"\d", password) or not re.search(r"[A-Z]", password):
-            flash("Password must be at least 8 characters long, contain a number, and an uppercase letter.", "danger")
-            return redirect(url_for("auth.signup"))
+            flash("Password must be at least 8 characters long, contain a number, and an uppercase letter.", 'danger')
+            return redirect(url_for('auth.signup'))
 
         if User.query.filter_by(username=username).first():
-            flash("Username already exists. Please choose another one.", "danger")
-        else:
-            hashed_password = generate_password_hash(password, method="sha256")
-            new_user = User(username=username, password=hashed_password)
-            db.session.add(new_user)
-            db.session.commit()
-            flash("Account created successfully! Please log in.", "success")
-            return redirect(url_for("auth.login"))
-
-    return render_template("signup.html")
-
-
-# Logout Route
-@auth_bp.route("/logout")
-def logout():
-    """Logout page"""
-    session.clear()
-    flash("Logged out successfully.", "success")
-    return redirect(url_for("main.home"))
+            flash('Username already exists. Please choose another one.', 'dan
