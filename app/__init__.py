@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 from flask_migrate import Migrate
 from redis import Redis
+from app.routes import main_bp, auth_bp
 
 import os
 
@@ -20,9 +21,8 @@ def create_app():
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     redis_client = Redis.from_url(
         redis_url,
-        ssl=True,
         ssl_cert_reqs="required",
-        ssl_ca_certs=r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.txt"
+        ssl_ca_certs=r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.pem"
     )
 
     app.config["CACHE_TYPE"] = "RedisCache"
@@ -32,5 +32,9 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     cache.init_app(app)
+
+    # Register blueprints
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp, url_prefix="/auth")
 
     return app
