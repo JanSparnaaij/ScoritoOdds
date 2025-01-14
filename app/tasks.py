@@ -22,7 +22,7 @@ def get_app_context():
 
 @celery.task(name="app.tasks.fetch_tennis_matches_in_background")
 def fetch_tennis_matches_in_background(league):
-    """Fetch and store tennis matches for a specific league."""
+    """Fetch and process tennis matches for a specific league."""
     app = get_app_context()
     with app.app_context():
         from app.constants import TENNIS_LEAGUES
@@ -31,41 +31,40 @@ def fetch_tennis_matches_in_background(league):
         rounds_url = league_urls.get("rounds")
 
         if not matches_url:
-            logger.warning(f"Invalid league: {league}")
+            app.logger.warning(f"Invalid league: {league}")
             return
 
         try:
+            # Fetch matches
             matches = fetch_combined_tennis_data(matches_url, rounds_url)
-
-            # Log matches to verify structure
             app.logger.info(f"Tennis matches retrieved: {len(matches)} matches fetched for {league}.")
 
             # Process matches
             processed_matches = []
             for match in matches:
                 try:
-                    # Fetch player names and odds
-                    player1, player2 = match["players"]
-                    odds_player1, odds_player2 = match["odds"]
+                    # Extract match details
+                    player1 = match.get("home_player", "Unknown")
+                    player2 = match.get("away_player", "Unknown")
+                    odds_player1 = match.get("odds", {}).get("home", None)
+                    odds_player2 = match.get("odds", {}).get("away", None)
 
-                    # Fetch player categories and points
-                    category1 = PLAYER_RATINGS.get(player1, "D")
-                    category2 = PLAYER_RATINGS.get(player2, "D")
-
+                    # Assign player categories and points
+                    category1 = PLAYER_RATINGS.get(player1, "?")
+                    category2 = PLAYER_RATINGS.get(player2, "?")
                     points1 = {"A": 20, "B": 40, "C": 60, "D": 90}[category1]
                     points2 = {"A": 20, "B": 40, "C": 60, "D": 90}[category2]
 
                     # Calculate expected points
                     prob1 = 1 / float(odds_player1) if odds_player1 else 0
                     prob2 = 1 / float(odds_player2) if odds_player2 else 0
-
                     expected_points1 = round(prob1 * points1, 2)
                     expected_points2 = round(prob2 * points2, 2)
 
                     # Add processed match to the list
                     processed_matches.append({
-                        "date": match.get("date", ""),
-                        "round": match.get("round", ""),
+                        "date": match.get("date", "Unknown"),
+                        "round": match.get("round", "Unknown"),
                         "players": {
                             "player1": player1,
                             "player2": player2,
@@ -87,6 +86,9 @@ def fetch_tennis_matches_in_background(league):
                     app.logger.warning(f"Error processing match: {match}. Error: {e}")
                     continue
 
+            # Log processed matches
+            app.logger.info(f"Processed {len(processed_matches)} matches for league {league}.")
+
             # Store in Redis
             cache_key = f"tennis_matches_{league}"
             app.redis_client.set(cache_key, json.dumps(processed_matches), ex=3600)
@@ -100,45 +102,64 @@ def fetch_matches_in_background(league):
     app = get_app_context()
     with app.app_context():
         from app.constants import LEAGUES
-        url = LEAGUES.get(league, LEAGUES["eredivisie"])
-        app.logger.info(f"Fetching football matches for league: {league} with URL: {url}")
+
+        # Validate league
+        url = LEAGUES.get(league)
+        if not url:
+            app.logger.warning(f"Invalid league: {league}")
+            return
+
+        # Check if this task is already completed or running
+        cache_key = f"matches_{league}"
+        task_lock_key = f"fetch_task_{league}"
+        if app.redis_client.exists(task_lock_key):
+            app.logger.info(f"Task for league {league} is already running. Skipping.")
+            return
+        app.redis_client.set(task_lock_key, "running", ex=300)  # Lock task for 5 minutes
 
         try:
-            # Fetch matches
+            # Check for existing cached data
+            if app.redis_client.exists(cache_key):
+                app.logger.info(f"Cached data for league {league} already exists. Skipping fetch.")
+                return
+
+            # Fetch matches asynchronously
             loop = asyncio.get_event_loop()
             matches = loop.run_until_complete(fetch_all_matches_async(url))
 
-            # Log matches to verify structure
+            if not matches:
+                app.logger.warning(f"No matches found for league {league}.")
+                return
+
+            # Log retrieved matches
             app.logger.info(f"Matches retrieved: {len(matches)} matches fetched for {league}.")
 
-            # Add timeout handling for each match processing
+            # Process matches
             processed_matches = []
-            for idx, match in enumerate(matches):
+            for match in matches:
                 try:
-                    # Process each match individually
                     processed_matches.append({
-                        "home_team": match.get("home_team", ""),
-                        "away_team": match.get("away_team", ""),
+                        "home_team": match.get("home_team", "").strip(),
+                        "away_team": match.get("away_team", "").strip(),
                         "odds": {
-                            "home": match["odds"].get("home", ""),
-                            "draw": match["odds"].get("draw", ""),
-                            "away": match["odds"].get("away", "")
-                        }
+                            "home": match.get("odds", {}).get("home", "").strip(),
+                            "draw": match.get("odds", {}).get("draw", "").strip(),
+                            "away": match.get("odds", {}).get("away", "").strip(),
+                        },
                     })
-                except KeyError as e:
-                    app.logger.warning(f"KeyError processing match {idx}: {e}")
                 except Exception as e:
-                    app.logger.warning(f"Error processing match {idx}: {e}")
-                    continue  # Skip to the next match
+                    app.logger.warning(f"Error processing match: {match}. Error: {e}")
+                    continue
 
-            # Log processed matches
-            app.logger.info(f"Processed matches: {processed_matches}")
-
-            # Store in Redis
+            # Cache processed matches
             if processed_matches:
-                app.redis_client.set(f"matches_{league}", json.dumps(processed_matches), ex=3600)
+                app.redis_client.set(cache_key, json.dumps(processed_matches), ex=3600)  # Cache for 1 hour
                 app.logger.info(f"Football data for {league} successfully cached.")
             else:
                 app.logger.warning(f"No valid matches processed for league: {league}")
+
         except Exception as e:
-            logger.error(f"Error fetching football data for {league}: {e}")
+            app.logger.error(f"Error fetching football data for {league}: {e}")
+        finally:
+            # Release task lock
+            app.redis_client.delete(task_lock_key)
