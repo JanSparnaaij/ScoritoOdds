@@ -2,9 +2,11 @@ from app.celery_worker import celery
 from app.tennis_fetcher import fetch_combined_tennis_data
 from app.football_fetcher import fetch_all_matches_async
 from app import cache, create_app
+import asyncio
 import logging
 import sys
 import os
+import warnings
 
 # Ensure the root directory is included in PYTHONPATH
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
@@ -34,17 +36,20 @@ def fetch_tennis_matches_in_background(league):
             logger.error(f"Error fetching tennis data for {league}: {e}")
 
 
+# football task
 @celery.task(name="app.tasks.fetch_matches_in_background")
 def fetch_matches_in_background(league):
     with app.app_context():
         from app.routes import LEAGUES
-
         url = LEAGUES.get(league, LEAGUES['eredivisie'])
         logger.info(f"Fetching football matches for league: {league} with URL: {url}")
 
         try:
-            matches = fetch_all_matches_async(url)
+            # Use asyncio.run to execute the coroutine
+            matches = asyncio.run(fetch_all_matches_async(url))
             cache.set(f"matches_{league}", matches, timeout=3600)
             logger.info(f"Football data for {league} successfully cached.")
         except Exception as e:
             logger.error(f"Error fetching football data for {league}: {e}")
+
+warnings.filterwarnings("ignore", category=UserWarning)
