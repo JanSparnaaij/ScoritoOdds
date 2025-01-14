@@ -6,10 +6,11 @@ import logging
 import sys
 import os
 
-# path for config file
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+# Ensure the root directory is included in PYTHONPATH
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 print("Current PYTHONPATH:", sys.path)
-
 
 logger = logging.getLogger(__name__)
 
