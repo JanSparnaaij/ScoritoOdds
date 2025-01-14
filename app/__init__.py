@@ -2,13 +2,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 from flask_migrate import Migrate
-from dotenv import load_dotenv
-from app.celery_worker import celery
-import os
 from redis import Redis
 
-# Load environment variables
-load_dotenv()
+import os
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -20,10 +16,15 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object("config.Config")
 
-    # Configure Redis with SSL options if REDIS_URL is provided
+    # Configure Redis with the self-signed certificate
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    redis_client = Redis.from_url(redis_url)
-    
+    redis_client = Redis.from_url(
+        redis_url,
+        ssl=True,
+        ssl_cert_reqs="required",
+        ssl_ca_certs=r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.txt"
+    )
+
     app.config["CACHE_TYPE"] = "RedisCache"
     app.config["CACHE_REDIS_CLIENT"] = redis_client
 
@@ -31,13 +32,5 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     cache.init_app(app)
-
-    # Register blueprints
-    from app.routes import main_bp, auth_bp
-    app.register_blueprint(main_bp)
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-
-    # Attach Flask app context to Celery
-    celery.conf.update(app.config)
 
     return app
