@@ -1,6 +1,7 @@
 from playwright.async_api import async_playwright
 from app.player_ratings import PLAYER_RATINGS
 
+
 async def fetch_tennis_matches_async(league_url):
     """
     Fetch tennis match details asynchronously from OddsPortal.
@@ -73,8 +74,26 @@ async def fetch_tennis_matches_async(league_url):
 
         except Exception as e:
             print(f"Error fetching tennis matches: {e}")
-            return None
+            return []
 
         finally:
             if browser:
                 await browser.close()
+
+
+def fetch_combined_tennis_data(matches_url, rounds_url):
+    """
+    Fetch tennis matches synchronously using the async fetcher.
+
+    Args:
+        matches_url (str): Matches URL.
+        rounds_url (str): Rounds URL (placeholder).
+
+    Returns:
+        list: Match details.
+    """
+    try:
+        return asyncio.run(fetch_tennis_matches_async(matches_url))
+    except Exception as e:
+        print(f"Error fetching combined tennis data: {e}")
+        return []

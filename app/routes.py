@@ -4,6 +4,7 @@ from app import cache, db
 from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from blinker import signal
+from app.constants import LEAGUES, TENNIS_LEAGUES
 import re
 
 # Blueprints
@@ -13,26 +14,6 @@ auth_bp = Blueprint("auth", __name__)
 # Signal definitions
 fetch_tennis_signal = signal("fetch-tennis")
 fetch_football_signal = signal("fetch-football")
-
-# League URLs
-LEAGUES = {
-    "eredivisie": "https://www.oddsportal.com/football/netherlands/eredivisie/",
-    "eerste_divisie": "https://www.oddsportal.com/football/netherlands/eerste-divisie/",
-    "premier_league": "https://www.oddsportal.com/football/england/premier-league/",
-    "jupiler_pro_league": "https://www.oddsportal.com/football/belgium/jupiler-pro-league/",
-    "bundesliga": "https://www.oddsportal.com/football/germany/bundesliga/",
-    "serie_a": "https://www.oddsportal.com/football/italy/serie-a/",
-    "la_liga": "https://www.oddsportal.com/football/spain/laliga/",
-    "champions_league": "https://www.oddsportal.com/football/europe/champions-league/",
-    "europa_league": "https://www.oddsportal.com/football/europe/europa-league/",
-}
-
-TENNIS_LEAGUES = {
-    "atp_australian_open": {
-        "matches": "https://www.oddsportal.com/tennis/australia/atp-australian-open/",
-        "rounds": "https://www.oddsportal.com/tennis/australia/atp-australian-open/standings/",
-    },
-}
 
 # Signal Handlers
 @fetch_football_signal.connect
