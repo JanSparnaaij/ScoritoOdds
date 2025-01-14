@@ -5,9 +5,6 @@ from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from blinker import signal
 import re
-import asyncio
-from football_fetcher import fetch_all_matches_async
-from tennis_fetcher import fetch_combined_tennis_data
 
 # Blueprints
 main_bp = Blueprint("main", __name__)
@@ -34,28 +31,15 @@ TENNIS_LEAGUES = {
 # Signal Handlers
 @fetch_football_signal.connect
 def handle_fetch_football(sender, league):
-    league_url = LEAGUES.get(league)
-    if league_url:
-        current_app.logger.info(f"Fetching football data for {league}")
-        matches = asyncio.run(fetch_all_matches_async(league_url))
-        if matches:
-            cache.set(f"matches_{league}", matches, timeout=3600)
-        else:
-            current_app.logger.error(f"Failed to fetch football data for {league}")
+    from app.tasks import fetch_matches_in_background
+    current_app.logger.info(f"Signal received to fetch football data for league: {league}")
+    fetch_matches_in_background.delay(league)
 
 @fetch_tennis_signal.connect
 def handle_fetch_tennis(sender, league):
-    league_urls = TENNIS_LEAGUES.get(league, {})
-    matches_url = league_urls.get("matches")
-    rounds_url = league_urls.get("rounds")
-
-    if matches_url and rounds_url:
-        current_app.logger.info(f"Fetching tennis data for {league}")
-        matches = fetch_combined_tennis_data(matches_url, rounds_url)
-        if matches:
-            cache.set(f"tennis_matches_{league}", matches, timeout=3600)
-        else:
-            current_app.logger.error(f"Failed to fetch tennis data for {league}")
+    from app.tasks import fetch_tennis_matches_in_background
+    current_app.logger.info(f"Signal received to fetch tennis data for league: {league}")
+    fetch_tennis_matches_in_background.delay(league)
 
 # Routes
 @main_bp.route("/")
