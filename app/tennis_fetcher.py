@@ -19,40 +19,49 @@ def fetch_combined_tennis_data(matches_url, rounds_url):
         list: A list of dictionaries containing match data.
     """
     match_data = []
+    round_names = []
 
     try:
         # Fetch round data
-        logger.warning(f"Fetching content from: {rounds_url}")
-        rounds_response = requests.get(rounds_url)
-        rounds_soup = BeautifulSoup(rounds_response.content, "html.parser")
+        logger.info(f"Fetching round data from: {rounds_url}")
+        rounds_response = requests.get(rounds_url, timeout=10)
+        rounds_response.raise_for_status()
 
-        # Extract round names (update CSS selectors as necessary)
-        rounds = rounds_soup.select(".round-name-selector")  # Placeholder selector
+        rounds_soup = BeautifulSoup(rounds_response.content, "html.parser")
+        rounds = rounds_soup.select(".round-name-selector")  # Update this selector
         round_names = [round_.text.strip() for round_ in rounds if round_.text]
-        logger.info(f"Extracted rounds: {round_names}")
+        logger.debug(f"Extracted {len(round_names)} rounds: {round_names}")
+
     except Exception as e:
         logger.error(f"Failed to fetch or parse round data: {e}")
-        round_names = []
 
     try:
         # Fetch match data
-        logger.warning(f"Fetching content from: {matches_url}")
-        matches_response = requests.get(matches_url)
-        matches_soup = BeautifulSoup(matches_response.content, "html.parser")
+        logger.info(f"Fetching match data from: {matches_url}")
+        matches_response = requests.get(matches_url, timeout=10)
+        matches_response.raise_for_status()
 
-        # Extract match containers (update CSS selectors as necessary)
-        match_containers = matches_soup.select(".match-container-selector")  # Placeholder selector
+        matches_soup = BeautifulSoup(matches_response.content, "html.parser")
+        match_containers = matches_soup.select(".match-container-selector")  # Update this selector
+        logger.debug(f"Found {len(match_containers)} match containers.")
 
         for match in match_containers:
             try:
-                player1 = match.select_one(".player1-name-selector").text.strip()
-                player2 = match.select_one(".player2-name-selector").text.strip()
+                # Extract player names
+                player1_elem = match.select_one(".player1-name-selector")
+                player2_elem = match.select_one(".player2-name-selector")
+                if not player1_elem or not player2_elem:
+                    logger.warning("Missing player names. Skipping match.")
+                    continue
 
-                odds_player1 = match.select_one(".player1-odds-selector").text.strip()
-                odds_player2 = match.select_one(".player2-odds-selector").text.strip()
+                player1 = player1_elem.text.strip()
+                player2 = player2_elem.text.strip()
 
-                odds_player1 = float(odds_player1) if odds_player1 else None
-                odds_player2 = float(odds_player2) if odds_player2 else None
+                # Extract odds
+                odds_player1_elem = match.select_one(".player1-odds-selector")
+                odds_player2_elem = match.select_one(".player2-odds-selector")
+                odds_player1 = float(odds_player1_elem.text.strip()) if odds_player1_elem else None
+                odds_player2 = float(odds_player2_elem.text.strip()) if odds_player2_elem else None
 
                 probabilities = {
                     "player1": round(100 / odds_player1, 2) if odds_player1 else None,
@@ -73,19 +82,24 @@ def fetch_combined_tennis_data(matches_url, rounds_url):
                         "player1": PLAYER_RATINGS.get(player1, "Unknown"),
                         "player2": PLAYER_RATINGS.get(player2, "Unknown"),
                     },
-                    "round": "Unknown",  # Default round value, updated below
+                    "round": "Unknown",  # Default round value
                     "date": "Unknown",  # Placeholder for date if available
                 }
 
-                # Assign round names if available
+                # Assign round names cyclically if needed
                 if round_names:
-                    match_info["round"] = round_names.pop(0) if round_names else "Unknown"
+                    match_info["round"] = round_names.pop(0)
+                else:
+                    logger.debug(f"No remaining rounds for match: {player1} vs {player2}")
 
                 match_data.append(match_info)
 
             except Exception as match_error:
                 logger.warning(f"Error parsing match: {match_error}")
+                continue
+
     except Exception as e:
         logger.error(f"Failed to fetch or parse match data: {e}")
 
+    logger.info(f"Extracted {len(match_data)} matches.")
     return match_data
