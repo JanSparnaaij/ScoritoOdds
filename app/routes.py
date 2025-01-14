@@ -50,6 +50,7 @@ async def football():
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_football_signal.send(current_app._get_current_object(), league=selected_league)
+        current_app.logger.info(f"Triggered football signal for league: {selected_league}")
 
     return render_template(
         "football.html", matches=matches or [], leagues=LEAGUES, selected_league=selected_league
@@ -72,6 +73,7 @@ async def tennis():
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)
+        current_app.logger.info(f"Triggered tennis signal for league: {selected_league}")
 
     # Add categories based on PLAYER_RATINGS
     categories = set(PLAYER_RATINGS.values())
