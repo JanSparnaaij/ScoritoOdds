@@ -3,12 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 from flask_migrate import Migrate
 from redis import Redis
+from app.models import db
 from app.routes import main_bp, auth_bp
 
 import os
 
 # Initialize extensions
-db = SQLAlchemy()
 migrate = Migrate()
 cache = Cache()
 

@@ -1,10 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from app.player_ratings import PLAYER_RATINGS
-from app import cache, db
-from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from blinker import signal
 from app.constants import LEAGUES, TENNIS_LEAGUES
+from app.models import User
 import re
 
 # Blueprints
@@ -35,6 +34,7 @@ def home():
 
 @main_bp.route("/football")
 async def football():
+    from app import cache  # Lazy import of cache
     if "user_id" not in session:
         flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
@@ -51,6 +51,7 @@ async def football():
 
 @main_bp.route("/tennis")
 async def tennis():
+    from app import cache  # Lazy import of cache
     if "user_id" not in session:
         flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
@@ -67,10 +68,11 @@ async def tennis():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    from app.models import db, User  # Lazy import of db
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        user = User.query.filter_by(username=username).first()
+        user = db.session.query(User).filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
             session.clear()
@@ -84,6 +86,7 @@ def login():
 
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
+    from app.models import db, User  # Lazy import of db
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
@@ -92,7 +95,7 @@ def signup():
             flash("Password must be at least 8 characters long, contain a number, and an uppercase letter.", "danger")
             return redirect(url_for("auth.signup"))
 
-        if User.query.filter_by(username=username).first():
+        if db.session.query(User).filter_by(username=username).first():
             flash("Username already exists. Please choose another one.", "danger")
         else:
             hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
@@ -112,6 +115,7 @@ def logout():
 
 @main_bp.route("/redis")
 def test_redis():
+    from app import cache  # Lazy import of cache
     try:
         cache.set("test_key", "test_value", timeout=60)
         value = cache.get("test_key")
