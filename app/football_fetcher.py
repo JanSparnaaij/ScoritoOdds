@@ -54,15 +54,11 @@ async def fetch_all_matches_async(league_url):
                     away_team = await container.locator('a[title]').nth(1).text_content()
 
                     # Extract odds
-                    odds = container.locator('div[data-v-34474325] p')
-                    odds_count = await odds.count()
-                    if odds_count < 3:
-                        print(f"Skipping match {row_id} due to missing odds.")
-                        continue
-
+                    odds = container.locator('div[data-v-34474325] p')                   
                     home_odd = await odds.nth(0).text_content()
                     draw_odd = await odds.nth(1).text_content()
                     away_odd = await odds.nth(2).text_content()
+                    print(f"Match {row_id}: Home {home_odd}, Draw {draw_odd}, Away {away_odd}")
 
                     # Add match details to the list
                     all_matches.append({
