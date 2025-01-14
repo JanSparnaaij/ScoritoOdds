@@ -10,7 +10,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-
 def get_app_context():
     """Create and return a Flask app instance."""
     # Ensure the base directory is in the Python path
@@ -20,14 +19,12 @@ def get_app_context():
     from app import create_app
     return create_app()
 
-
 @celery.task(name="app.tasks.fetch_tennis_matches_in_background")
 def fetch_tennis_matches_in_background(league):
     """Fetch and store tennis matches for a specific league."""
     app = get_app_context()
     with app.app_context():
         from app.constants import TENNIS_LEAGUES
-
         league_urls = TENNIS_LEAGUES.get(league, {})
         matches_url = league_urls.get("matches")
         rounds_url = league_urls.get("rounds")
@@ -37,26 +34,53 @@ def fetch_tennis_matches_in_background(league):
             return
 
         try:
-            # Fetch and format matches
             matches = fetch_combined_tennis_data(matches_url, rounds_url)
-            formatted_matches = [
-                {
-                    "date": match["date"],
-                    "round": match["round"],
-                    "players": match["players"],
-                    "categories": match["categories"],
-                    "odds": match["odds"],
-                    "expected_points": match["expected_points"]
-                }
-                for match in matches
-            ]
+
+            # Log matches to verify structure
+            app.logger.info(f"Tennis matches retrieved: {len(matches)} matches fetched for {league}.")
+
+            # Add timeout handling for individual matches
+            processed_matches = []
+            for idx, match in enumerate(matches):
+                try:
+                    # Process each match individually
+                    processed_matches.append({
+                        "date": match.get("date", ""),
+                        "round": match.get("round", ""),
+                        "players": {
+                            "player1": match["players"][0],
+                            "player2": match["players"][1],
+                        },
+                        "categories": {
+                            "player1": match["categories"][0],
+                            "player2": match["categories"][1],
+                        },
+                        "odds": {
+                            "player1": match["odds"][0],
+                            "player2": match["odds"][1],
+                        },
+                        "expected_points": {
+                            "player1": match["expected_points"][0],
+                            "player2": match["expected_points"][1],
+                        },
+                    })
+                except KeyError as e:
+                    app.logger.warning(f"KeyError processing match {idx}: {e}")
+                except Exception as e:
+                    app.logger.warning(f"Error processing match {idx}: {e}")
+                    continue  # Skip to the next match
+
+            # Log processed matches
+            app.logger.info(f"Processed matches: {processed_matches}")
 
             # Store in Redis
-            app.redis_client.set(f"tennis_matches_{league}", json.dumps(formatted_matches), ex=3600)
-            logger.info(f"Tennis data for {league} successfully cached.")
+            if processed_matches:
+                app.redis_client.set(f"tennis_matches_{league}", json.dumps(processed_matches), ex=3600)
+                app.logger.info(f"Tennis data for {league} successfully cached.")
+            else:
+                app.logger.warning(f"No valid matches processed for league: {league}")
         except Exception as e:
             logger.error(f"Error fetching tennis data for {league}: {e}")
-
 
 @celery.task(name="app.tasks.fetch_matches_in_background")
 def fetch_matches_in_background(league):
@@ -64,7 +88,6 @@ def fetch_matches_in_background(league):
     app = get_app_context()
     with app.app_context():
         from app.constants import LEAGUES
-
         url = LEAGUES.get(league, LEAGUES["eredivisie"])
         app.logger.info(f"Fetching football matches for league: {league} with URL: {url}")
 
@@ -73,25 +96,37 @@ def fetch_matches_in_background(league):
             loop = asyncio.get_event_loop()
             matches = loop.run_until_complete(fetch_all_matches_async(url))
 
-            # Format matches for Redis
-            formatted_matches = [
-                {
-                    "home_team": match["home_team"],
-                    "away_team": match["away_team"],
-                    "odds": {
-                        "home": match["odds"]["home"],
-                        "draw": match["odds"]["draw"],
-                        "away": match["odds"]["away"]
-                    }
-                }
-                for match in matches
-            ]
+            # Log matches to verify structure
+            app.logger.info(f"Matches retrieved: {len(matches)} matches fetched for {league}.")
 
-            # Log matches to ensure correctness
-            app.logger.info(f"Matches retrieved: {formatted_matches}")
+            # Add timeout handling for each match processing
+            processed_matches = []
+            for idx, match in enumerate(matches):
+                try:
+                    # Process each match individually
+                    processed_matches.append({
+                        "home_team": match.get("home_team", ""),
+                        "away_team": match.get("away_team", ""),
+                        "odds": {
+                            "home": match["odds"].get("home", ""),
+                            "draw": match["odds"].get("draw", ""),
+                            "away": match["odds"].get("away", "")
+                        }
+                    })
+                except KeyError as e:
+                    app.logger.warning(f"KeyError processing match {idx}: {e}")
+                except Exception as e:
+                    app.logger.warning(f"Error processing match {idx}: {e}")
+                    continue  # Skip to the next match
+
+            # Log processed matches
+            app.logger.info(f"Processed matches: {processed_matches}")
 
             # Store in Redis
-            app.redis_client.set(f"matches_{league}", json.dumps(formatted_matches), ex=3600)
-            app.logger.info(f"Football data for {league} successfully cached.")
+            if processed_matches:
+                app.redis_client.set(f"matches_{league}", json.dumps(processed_matches), ex=3600)
+                app.logger.info(f"Football data for {league} successfully cached.")
+            else:
+                app.logger.warning(f"No valid matches processed for league: {league}")
         except Exception as e:
             logger.error(f"Error fetching football data for {league}: {e}")
