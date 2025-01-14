@@ -3,16 +3,16 @@ from app.player_ratings import PLAYER_RATINGS
 from app import cache, db
 from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
-from blinker import signal  
+from blinker import signal
 import re
 
-# Blueprint for main routes
-main_bp = Blueprint('main', __name__)
-auth_bp = Blueprint('auth', __name__)
+# Blueprints
+main_bp = Blueprint("main", __name__)
+auth_bp = Blueprint("auth", __name__)
 
 # Signal definitions
-fetch_tennis_signal = signal('fetch-tennis')
-fetch_football_signal = signal('fetch-football')
+fetch_tennis_signal = signal("fetch-tennis")
+fetch_football_signal = signal("fetch-football")
 
 # League URLs
 LEAGUES = {
@@ -29,59 +29,65 @@ TENNIS_LEAGUES = {
 }
 
 # Homepage
-@main_bp.route('/')
+@main_bp.route("/")
 def home():
     """Homepage"""
-    return render_template('home.html')
+    return render_template("home.html")
+
 
 # Football Page
-@main_bp.route('/football')
+@main_bp.route("/football")
 async def football():
     """Football page"""
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
+    if "user_id" not in session:
+        flash("Please log in to access this page.", "warning")
+        return redirect(url_for("auth.login"))
 
-    selected_league = request.args.get('league', 'eredivisie')
+    selected_league = request.args.get("league", "eredivisie")
     cache_key = f"matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
-        fetch_football_signal.send(current_app._get_current_object(), league=selected_league)  # Trigger signal
+        fetch_football_signal.send(current_app._get_current_object(), league=selected_league)
 
-    return render_template('football.html', matches=matches or [], leagues=LEAGUES, selected_league=selected_league)
+    return render_template(
+        "football.html", matches=matches or [], leagues=LEAGUES, selected_league=selected_league
+    )
 
-@main_bp.route('/tennis')
+
+# Tennis Page
+@main_bp.route("/tennis")
 async def tennis():
     """Tennis page"""
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
+    if "user_id" not in session:
+        flash("Please log in to access this page.", "warning")
+        return redirect(url_for("auth.login"))
 
-    selected_league = request.args.get('league', 'atp_australian_open')
-    selected_category = request.args.get('category', 'all')
+    selected_league = request.args.get("league", "atp_australian_open")
+    selected_category = request.args.get("category", "all")
     cache_key = f"tennis_matches_{selected_league}"
     matches = cache.get(cache_key)
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
-        fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)  # Trigger signal
+        fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)
 
     # Add categories based on PLAYER_RATINGS
     categories = set(PLAYER_RATINGS.values())
     matches_with_categories = []
-    for match in matches:
-        match["categories"] = {
-            "player1": PLAYER_RATINGS.get(match["players"]["player1"], "Unknown"),
-            "player2": PLAYER_RATINGS.get(match["players"]["player2"], "Unknown"),
-        }
-        if (
-            selected_category == "all"
-            or match["categories"]["player1"] == selected_category
-            or match["categories"]["player2"] == selected_category
-        ):
-            matches_with_categories.append(match)
+    if matches:
+        for match in matches:
+            match["categories"] = {
+                "player1": PLAYER_RATINGS.get(match["players"]["player1"], "Unknown"),
+                "player2": PLAYER_RATINGS.get(match["players"]["player2"], "Unknown"),
+            }
+            if (
+                selected_category == "all"
+                or match["categories"]["player1"] == selected_category
+                or match["categories"]["player2"] == selected_category
+            ):
+                matches_with_categories.append(match)
 
     return render_template(
         "tennis.html",
@@ -92,53 +98,56 @@ async def tennis():
         selected_category=selected_category,
     )
 
+
 # Login Route
-@auth_bp.route('/login', methods=['GET', 'POST'])
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     """Login page"""
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
             session.clear()
-            session['user_id'] = user.id
-            flash('Logged in successfully!', 'success')
-            return redirect(url_for('main.home'))
+            session["user_id"] = user.id
+            flash("Logged in successfully!", "success")
+            return redirect(url_for("main.home"))
         else:
-            flash('Invalid credentials. Please try again.', 'danger')
+            flash("Invalid credentials. Please try again.", "danger")
 
-    return render_template('login.html')
+    return render_template("login.html")
+
 
 # Signup Route
-@auth_bp.route('/signup', methods=['GET', 'POST'])
+@auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
     """Signup page"""
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
         if len(password) < 8 or not re.search(r"\d", password) or not re.search(r"[A-Z]", password):
-            flash("Password must be at least 8 characters long, contain a number, and an uppercase letter.", 'danger')
-            return redirect(url_for('auth.signup'))
+            flash("Password must be at least 8 characters long, contain a number, and an uppercase letter.", "danger")
+            return redirect(url_for("auth.signup"))
 
         if User.query.filter_by(username=username).first():
-            flash('Username already exists. Please choose another one.', 'danger')
+            flash("Username already exists. Please choose another one.", "danger")
         else:
-            hashed_password = generate_password_hash(password, method='sha256')
+            hashed_password = generate_password_hash(password, method="sha256")
             new_user = User(username=username, password=hashed_password)
             db.session.add(new_user)
             db.session.commit()
-            flash('Account created successfully! Please log in.', 'success')
-            return redirect(url_for('auth.login'))
+            flash("Account created successfully! Please log in.", "success")
+            return redirect(url_for("auth.login"))
 
-    return render_template('signup.html')
+    return render_template("signup.html")
+
 
 # Logout Route
-@auth_bp.route('/logout')
+@auth_bp.route("/logout")
 def logout():
     """Logout page"""
     session.clear()
-    flash('Logged out successfully.', 'success')
-    return redirect(url_for('main.home'))
+    flash("Logged out successfully.", "success")
+    return redirect(url_for("main.home"))
