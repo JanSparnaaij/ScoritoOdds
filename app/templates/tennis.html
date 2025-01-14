@@ -49,20 +49,12 @@
         <tr>
             <td>{{ match.date }}</td>
             <td>{{ match.round }}</td>
-            <td {% if match.odds.player1 | float < match.odds.player2 | float %}class="highlight"{% endif %}>
-                {{ match.players.player1 }}
-            </td>
+            <td class="highlight">{{ match.players.player1 }}</td>
             <td>{{ match.categories.player1 }}</td>
-            <td {% if match.odds.player2 | float < match.odds.player1 | float %}class="highlight"{% endif %}>
-                {{ match.players.player2 }}
-            </td>
+            <td class="highlight">{{ match.players.player2 }}</td>
             <td>{{ match.categories.player2 }}</td>
-            <td {% if match.odds.player1 | float < match.odds.player2 | float %}class="highlight"{% endif %}>
-                {{ match.odds.player1 }}
-            </td>
-            <td {% if match.odds.player2 | float < match.odds.player1 | float %}class="highlight"{% endif %}>
-                {{ match.odds.player2 }}
-            </td>
+            <td>{{ match.odds.player1 }}</td>
+            <td>{{ match.odds.player2 }}</td>
             <td>{{ match.expected_points.player1 }}</td>
             <td>{{ match.expected_points.player2 }}</td>
         </tr>
