@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1>Football Odds</h1>
+<h1>Tennis Odds</h1>
 
-<!-- Dropdown for Selecting League -->
-<form method="get" action="/football">
+<!-- League Selection Form -->
+<form method="get" action="/tennis">
     <label for="league">Select League:</label>
     <select id="league" name="league" onchange="showLoading(); this.form.submit()">
         {% for league, url in leagues.items() %}
@@ -32,31 +32,39 @@
 <table>
     <thead>
         <tr>
-            <th>Home Team</th>
-            <th>Away Team</th>
-            <th>Home Odds</th>
-            <th>Draw Odds</th>
-            <th>Away Odds</th>
+            <th>DateTime</th>
+            <th>Round</th>
+            <th>Player 1</th>
+            <th>Player 1 Category</th>
+            <th>Player 2</th>
+            <th>Player 2 Category</th>
+            <th>Player 1 Odds</th>
+            <th>Player 2 Odds</th>
+            <th>Player 1 Expected Points</th>
+            <th>Player 2 Expected Points</th>
         </tr>
     </thead>
     <tbody>
         {% for match in matches %}
         <tr>
-            <td {% if match.odds.home | float <= match.odds.draw | float and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
-                {{ match.home_team }}
+            <td>{{ match.date }}</td>
+            <td>{{ match.round }}</td>
+            <td {% if match.odds.home and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
+                {{ match.home_player }}
             </td>
-            <td {% if match.odds.away | float <= match.odds.home | float and match.odds.away | float <= match.odds.draw | float %}class="highlight"{% endif %}>
-                {{ match.away_team }}
+            <td>{{ match.home_category }}</td>
+            <td {% if match.odds.away and match.odds.away | float < match.odds.home | float %}class="highlight"{% endif %}>
+                {{ match.away_player }}
             </td>
-            <td {% if match.odds.home | float <= match.odds.draw | float and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
+            <td>{{ match.away_category }}</td>
+            <td {% if match.odds.home and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
                 {{ match.odds.home }}
             </td>
-            <td {% if match.odds.draw | float <= match.odds.home | float and match.odds.draw | float <= match.odds.away | float %}class="highlight"{% endif %}>
-                {{ match.odds.draw }}
-            </td>
-            <td {% if match.odds.away | float <= match.odds.home | float and match.odds.away | float <= match.odds.draw | float %}class="highlight"{% endif %}>
+            <td {% if match.odds.away and match.odds.away | float < match.odds.home | float %}class="highlight"{% endif %}>
                 {{ match.odds.away }}
             </td>
+            <td>{{ match.expected_points.home }}</td>
+            <td>{{ match.expected_points.away }}</td>
         </tr>
         {% endfor %}
     </tbody>
