@@ -1,5 +1,6 @@
 from celery import Celery
 import os
+import warnings
 
 def create_celery_app(app=None):
     """
@@ -22,5 +23,11 @@ def create_celery_app(app=None):
 
     celery.autodiscover_tasks(["app.tasks"])  # Discover tasks in `app.tasks`
     return celery
+
+# Suppress SSL certificate warnings
+warnings.filterwarnings(
+    "ignore", 
+    message="Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker"
+)
 
 celery = create_celery_app()
