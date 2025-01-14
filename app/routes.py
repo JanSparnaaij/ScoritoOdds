@@ -5,6 +5,7 @@ from blinker import signal
 from app.constants import LEAGUES, TENNIS_LEAGUES
 from app.models import User
 import re
+import json
 
 # Blueprints
 main_bp = Blueprint("main", __name__)
@@ -42,7 +43,7 @@ async def football():
     cache_key = f"matches_{selected_league}"
     matches = current_app.redis_client.get(cache_key)
     if matches:
-        matches = matches.decode("utf-8")
+        matches = json.loads(matches.decode("utf-8")) 
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
@@ -60,7 +61,7 @@ async def tennis():
     cache_key = f"tennis_matches_{selected_league}"
     matches = current_app.redis_client.get(cache_key)
     if matches:
-        matches = matches.decode("utf-8")
+        matches = json.loads(matches.decode("utf-8")) 
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
@@ -118,7 +119,7 @@ def logout():
 @main_bp.route("/redis")
 def test_redis():
     try:
-        current_app.redis_client.set("test_key", "test_value", timeout=60)
+        current_app.redis_client.set("test_key", "test_value", ex=60)
         value = current_app.redis_client.get("test_key")
         return f"Redis connected. Retrieved value: {value}"
     except Exception as e:
@@ -127,7 +128,7 @@ def test_redis():
 @main_bp.route("/cache")
 def test_cache():
     try:
-        current_app.redis_client.set("test_key", "test_value", timeout=60)
+        current_app.redis_client.set("test_key", "test_value", ex=60)
         value = current_app.redis_client.get("test_key")
         return f"Cache connected. Retrieved value: {value}"
     except Exception as e:
@@ -138,7 +139,7 @@ def test_cache_debug():
     from flask import current_app
     try:
         current_app.logger.info("Setting cache key...")
-        current_app.redis_client.set("test_key_cache", "test_value_cache", timeout=60)
+        current_app.redis_client.set("test_key_cache", "test_value_cache", ex=60)
         current_app.logger.info("Retrieving cache key...")
         value = current_app.redis_client.get("test_key_cache")
         if value:
@@ -147,3 +148,17 @@ def test_cache_debug():
     except Exception as e:
         current_app.logger.error(f"Cache connection failed: {e}")
         return f"Cache connection failed: {e}", 500
+    
+@main_bp.route("/test-redis-matches")
+def test_redis_matches():
+    try:
+        value = current_app.redis_client.get(f"matches_eredivisie")
+        if value:
+            # Decode and print the value (assuming JSON serialization)
+            value = value.decode("utf-8")
+            return f"Matches retrieved: {value}"
+        else:
+            return "No matches found in Redis for 'matches_eredivisie'."
+    except Exception as e:
+        return f"Error retrieving matches: {e}", 500
+

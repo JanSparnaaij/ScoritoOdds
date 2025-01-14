@@ -9,6 +9,7 @@ def create_celery_app(app=None):
         app.import_name if app else __name__,
         broker=redis_url,
         backend=redis_url,
+        include=["app.tasks"],
         broker_use_ssl={
             "ssl_cert_reqs": "required",
             "ssl_ca_certs": r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.pem"
