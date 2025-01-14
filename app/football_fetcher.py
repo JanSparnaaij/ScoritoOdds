@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 async def fetch_all_matches_async(league_url):
     """
     Asynchronously fetch match details and odds for a specific league.
-    
+
     Args:
         league_url (str): URL of the league page on OddsPortal.
 
@@ -18,7 +18,7 @@ async def fetch_all_matches_async(league_url):
             page = await browser.new_page()
 
             print(f"Navigating to league: {league_url}")
-            await page.goto(league_url, ex=20000)
+            await page.goto(league_url, timeout=20000)
             print("League page loaded successfully!")
 
             # Validate that the correct page is loaded
@@ -27,7 +27,7 @@ async def fetch_all_matches_async(league_url):
                 return None
 
             # Wait for the parent container of matches
-            await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', ex=20000)
+            await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=20000)
 
             # Locate all match containers
             match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')
@@ -50,14 +50,21 @@ async def fetch_all_matches_async(league_url):
                     processed_ids.add(row_id)
 
                     # Extract team names
-                    home_team = await container.locator('a[title]').nth(0).text_content()
-                    away_team = await container.locator('a[title]').nth(1).text_content()
+                    home_team_locator = container.locator('a[title]').nth(0)
+                    away_team_locator = container.locator('a[title]').nth(1)
+
+                    if not await home_team_locator.is_visible() or not await away_team_locator.is_visible():
+                        print(f"Skipping incomplete match data for row {row_id}")
+                        continue
+
+                    home_team = await home_team_locator.text_content()
+                    away_team = await away_team_locator.text_content()
 
                     # Extract odds
                     odds = container.locator('div[data-v-34474325] p')                   
-                    home_odd = await odds.nth(0).text_content()
-                    draw_odd = await odds.nth(1).text_content()
-                    away_odd = await odds.nth(2).text_content()
+                    home_odd = await odds.nth(0).text_content(timeout=5000)
+                    draw_odd = await odds.nth(1).text_content(timeout=5000)
+                    away_odd = await odds.nth(2).text_content(timeout=5000)
                     print(f"Match {row_id}: Home {home_odd}, Draw {draw_odd}, Away {away_odd}")
 
                     # Add match details to the list

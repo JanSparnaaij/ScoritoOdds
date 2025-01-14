@@ -198,3 +198,10 @@ def clear_test_data():
         return "Test data cleared."
     except Exception as e:
         return f"Error clearing test data: {e}", 500
+
+@main_bp.route("/clear-tennis-cache")
+def clear_tennis_cache():
+    """Clear tennis cache for debugging."""
+    key = f"tennis_matches_atp_australian_open"
+    current_app.redis_client.delete(key)
+    return "Tennis cache cleared."
