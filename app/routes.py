@@ -110,7 +110,7 @@ def logout():
     flash("Logged out successfully.", "success")
     return redirect(url_for("main.home"))
 
-@main_bp.route("/test-redis")
+@main_bp.route("/redis")
 def test_redis():
     try:
         cache.set("test_key", "test_value", timeout=60)
