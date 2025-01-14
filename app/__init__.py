@@ -21,7 +21,7 @@ def create_app():
     app.config.from_object("config.Config")
 
     # Configure Redis with SSL options if REDIS_URL is provided
-    redis_url = os.getenv("REDIS_URL")
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     if redis_url:
         redis_client = Redis.from_url(redis_url, ssl_cert_reqs=None)
         app.config["CACHE_TYPE"] = "RedisCache"
