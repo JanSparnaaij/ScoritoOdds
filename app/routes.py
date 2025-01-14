@@ -109,3 +109,12 @@ def logout():
     session.clear()
     flash("Logged out successfully.", "success")
     return redirect(url_for("main.home"))
+
+@main_bp.route("/test-redis")
+def test_redis():
+    try:
+        cache.set("test_key", "test_value", timeout=60)
+        value = cache.get("test_key")
+        return f"Redis connected. Retrieved value: {value}"
+    except Exception as e:
+        return f"Redis connection failed: {e}", 500
