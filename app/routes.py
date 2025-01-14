@@ -1,9 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
-from app.player_ratings import PLAYER_RATINGS
 from werkzeug.security import generate_password_hash, check_password_hash
 from blinker import signal
 from app.constants import LEAGUES, TENNIS_LEAGUES
-from app.models import User
 import re
 import json
 
@@ -45,13 +43,15 @@ async def football():
     
     if matches:
         matches = json.loads(matches.decode("utf-8")) 
+        loading = False
         current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
     else:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_football_signal.send(current_app._get_current_object(), league=selected_league)
         current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
+        loading = True
 
-    return render_template("football.html", matches=matches or [], leagues=LEAGUES, selected_league=selected_league)
+    return render_template("football.html", matches=matches or [], leagues=LEAGUES, selected_league=selected_league, loading=loading)
 
 @main_bp.route("/tennis")
 async def tennis():
@@ -65,13 +65,16 @@ async def tennis():
 
     if matches:
         matches = json.loads(matches.decode("utf-8"))
+        loading = False
         current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
     else:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)
         current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
+        loading = True
 
-    return render_template("tennis.html", matches=matches or [], leagues=TENNIS_LEAGUES, selected_league=selected_league)
+
+    return render_template("tennis.html", matches=matches or [], leagues=TENNIS_LEAGUES, selected_league=selected_league, loading=loading)
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -185,3 +188,13 @@ def test_redis_read():
         return "No data found for 'matches_eredivisie'."
     except Exception as e:
         return f"Error reading from Redis: {e}", 500
+    
+@main_bp.route("/clear-data")
+def clear_test_data():
+    try:
+        keys_to_clear = ["matches_eredivisie"]
+        for key in keys_to_clear:
+            current_app.redis_client.delete(key)
+        return "Test data cleared."
+    except Exception as e:
+        return f"Error clearing test data: {e}", 500

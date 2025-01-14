@@ -16,16 +16,19 @@
 </form>
 
 <!-- Loading Indicator -->
-<div id="loadingMessage" style="display:none;">Loading data, please wait...</div>
+<div id="loadingMessage" class="{% if loading %}visible{% else %}hidden{% endif %}">
+    Loading data, please wait...
+</div>
 
 <!-- Debugging Info -->
-{% if matches %}
+{% if not loading and matches %}
     <p>{{ matches|length }} matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
-{% else %}
+{% elif not loading %}
     <p>No matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
 {% endif %}
 
 <!-- Table for Match Results -->
+{% if not loading %}
 <table>
     <thead>
         <tr>
@@ -58,11 +61,12 @@
         {% endfor %}
     </tbody>
 </table>
+{% endif %}
 
 <script>
     function showLoading() {
-        document.getElementById("loadingMessage").style.display = "block";
+        document.getElementById("loadingMessage").classList.add("visible");
+        document.getElementById("loadingMessage").classList.remove("hidden");
     }
 </script>
-
 {% endblock %}
