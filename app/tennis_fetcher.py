@@ -1,103 +1,80 @@
-import logging
-import requests
-from bs4 import BeautifulSoup
+from playwright.async_api import async_playwright
 from app.player_ratings import PLAYER_RATINGS
 
-# Configure logging
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger("TennisFetcher")
-
-def fetch_combined_tennis_data(matches_url, rounds_url):
+async def fetch_tennis_matches_async(league_url):
     """
-    Fetch combined tennis data from matches and rounds URLs.
+    Fetch tennis match details asynchronously from OddsPortal.
 
     Args:
-        matches_url (str): URL for the match data.
-        rounds_url (str): URL for the round data.
+        league_url (str): The URL of the tennis league page.
 
     Returns:
-        list: A list of dictionaries containing match data.
+        list: List of dictionaries containing match details and odds.
     """
-    match_data = []
+    async with async_playwright() as p:
+        browser = None
+        try:
+            # Launch browser in headless mode
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
 
-    try:
-        # Fetch round data
-        logger.info(f"Fetching round data from: {rounds_url}")
-        rounds_response = requests.get(rounds_url)
-        rounds_response.raise_for_status()
-        rounds_soup = BeautifulSoup(rounds_response.content, "html.parser")
+            print(f"Navigating to league: {league_url}")
+            await page.goto(league_url, timeout=30000)
+            print("League page loaded successfully!")
 
-        # Update selector for rounds
-        rounds = rounds_soup.select(".round-name-selector")  # Adjust selector as needed
-        round_names = [round_.text.strip() for round_ in rounds if round_.text]
-        logger.info(f"Extracted rounds: {round_names}")
-    except Exception as e:
-        logger.error(f"Failed to fetch or parse round data: {e}")
-        round_names = []
+            # Wait for match containers to load
+            await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=30000)
+            match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')
+            match_count = await match_containers.count()
 
-    try:
-        # Fetch match data
-        logger.info(f"Fetching match data from: {matches_url}")
-        matches_response = requests.get(matches_url)
-        matches_response.raise_for_status()
-        matches_soup = BeautifulSoup(matches_response.content, "html.parser")
+            print(f"Found {match_count} match containers.")
+            all_matches = []
 
-        # Update selector for match containers
-        match_containers = matches_soup.select("div[data-v-b8d70024] .group.flex")  # Adjust selector
-        logger.info(f"Found {len(match_containers)} match containers.")
+            for i in range(match_count):
+                container = match_containers.nth(i)
+                try:
+                    # Extract player names and categories
+                    home_player = await container.locator('a[title]').nth(0).text_content(timeout=5000)
+                    away_player = await container.locator('a[title]').nth(1).text_content(timeout=5000)
 
-        for container in match_containers:
-            try:
-                # Player names
-                player1 = container.select_one("a[title]").get("title").strip()
-                player2 = container.select("a[title]")[-1].get("title").strip()
+                    # Extract odds
+                    odds = container.locator('div[data-v-34474325] p')
+                    home_odd = float(await odds.nth(0).text_content(timeout=5000))
+                    away_odd = float(await odds.nth(1).text_content(timeout=5000))
 
-                # Odds
-                odds = container.select("div[data-v-34474325] p")
-                if len(odds) < 2:
-                    logger.warning(f"Skipping match due to missing odds.")
-                    continue
-                odds_player1 = float(odds[0].text.strip())
-                odds_player2 = float(odds[1].text.strip())
+                    # Calculate expected points
+                    expected_home_point = round(100 / home_odd, 2)
+                    expected_away_point = round(100 / away_odd, 2)
 
-                # Calculate expected points
-                expected_points_player1 = round(100 / odds_player1, 2)
-                expected_points_player2 = round(100 / odds_player2, 2)
-
-                # Date (if available)
-                date_element = container.select_one("p[data-v-931a4162]")
-                match_date = date_element.text.strip() if date_element else "Unknown"
-
-                # Assign round if available
-                match_round = round_names.pop(0) if round_names else "Unknown"
-
-                # Add match details to list
-                match_data.append({
-                    "date": match_date,
-                    "round": match_round,
-                    "players": {
-                        "player1": player1,
-                        "player2": player2,
-                    },
-                    "categories": {
-                        "player1": PLAYER_RATINGS.get(player1, "Unknown"),
-                        "player2": PLAYER_RATINGS.get(player2, "Unknown"),
-                    },
-                    "odds": {
-                        "player1": odds_player1,
-                        "player2": odds_player2,
-                    },
-                    "expected_points": {
-                        "player1": expected_points_player1,
-                        "player2": expected_points_player2,
+                    # Construct match data
+                    match_data = {
+                        "date": "Unknown",  # Placeholder for now
+                        "round": "R?",  # Placeholder for round
+                        "home_player": home_player.strip(),
+                        "home_category": PLAYER_RATINGS.get(home_player.strip(), "Unknown"),
+                        "away_player": away_player.strip(),
+                        "away_category": PLAYER_RATINGS.get(away_player.strip(), "Unknown"),
+                        "odds": {
+                            "home": home_odd,
+                            "away": away_odd,
+                        },
+                        "expected_points": {
+                            "home": expected_home_point,
+                            "away": expected_away_point,
+                        }
                     }
-                })
+                    all_matches.append(match_data)
+                except Exception as e:
+                    print(f"Error processing match {i + 1}: {e}")
+                    continue
 
-            except Exception as e:
-                logger.warning(f"Error processing match container: {e}")
-                continue
+            print(f"Extracted {len(all_matches)} matches.")
+            return all_matches
 
-    except Exception as e:
-        logger.error(f"Failed to fetch or parse match data: {e}")
+        except Exception as e:
+            print(f"Error fetching tennis matches: {e}")
+            return None
 
-    return match_data
+        finally:
+            if browser:
+                await browser.close()
