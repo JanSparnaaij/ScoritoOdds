@@ -11,11 +11,11 @@ def create_celery_app(app=None):
         backend=redis_url,
         broker_use_ssl={
             "ssl_cert_reqs": "required",
-            "ssl_ca_certs": r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.txt"
+            "ssl_ca_certs": r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.pem"
         },
         redis_backend_use_ssl={
             "ssl_cert_reqs": "required",
-            "ssl_ca_certs": r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.txt"
+            "ssl_ca_certs": r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.pem"
         }
     )
 

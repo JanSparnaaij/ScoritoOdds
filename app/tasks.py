@@ -8,12 +8,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 def get_app_context():
     """Create and return a Flask app instance."""
     from app import create_app
     return create_app()
-
 
 @celery.task(name="app.tasks.fetch_tennis_matches_in_background")
 def fetch_tennis_matches_in_background(league):
