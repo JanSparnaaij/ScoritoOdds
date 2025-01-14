@@ -34,14 +34,15 @@ def home():
 
 @main_bp.route("/football")
 async def football():
-    from app import cache  # Lazy import of cache
     if "user_id" not in session:
         flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     selected_league = request.args.get("league", "eredivisie")
     cache_key = f"matches_{selected_league}"
-    matches = cache.get(cache_key)
+    matches = current_app.redis_client.get(cache_key)
+    if matches:
+        matches = matches.decode("utf-8")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
@@ -51,14 +52,15 @@ async def football():
 
 @main_bp.route("/tennis")
 async def tennis():
-    from app import cache  # Lazy import of cache
     if "user_id" not in session:
         flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     selected_league = request.args.get("league", "atp_australian_open")
     cache_key = f"tennis_matches_{selected_league}"
-    matches = cache.get(cache_key)
+    matches = current_app.redis_client.get(cache_key)
+    if matches:
+        matches = matches.decode("utf-8")
 
     if not matches:
         flash("Data is being fetched; check back shortly.", "info")
@@ -115,10 +117,33 @@ def logout():
 
 @main_bp.route("/redis")
 def test_redis():
-    from app import cache  # Lazy import of cache
     try:
-        cache.set("test_key", "test_value", timeout=60)
-        value = cache.get("test_key")
+        current_app.redis_client.set("test_key", "test_value", timeout=60)
+        value = current_app.redis_client.get("test_key")
         return f"Redis connected. Retrieved value: {value}"
     except Exception as e:
         return f"Redis connection failed: {e}", 500
+
+@main_bp.route("/cache")
+def test_cache():
+    try:
+        current_app.redis_client.set("test_key", "test_value", timeout=60)
+        value = current_app.redis_client.get("test_key")
+        return f"Cache connected. Retrieved value: {value}"
+    except Exception as e:
+        return f"Cache connection failed: {e}", 500
+    
+@main_bp.route("/cache-debug")
+def test_cache_debug():
+    from flask import current_app
+    try:
+        current_app.logger.info("Setting cache key...")
+        current_app.redis_client.set("test_key_cache", "test_value_cache", timeout=60)
+        current_app.logger.info("Retrieving cache key...")
+        value = current_app.redis_client.get("test_key_cache")
+        if value:
+            value = value.decode("utf-8")
+        return f"Cache connected. Retrieved value: {value}"
+    except Exception as e:
+        current_app.logger.error(f"Cache connection failed: {e}")
+        return f"Cache connection failed: {e}", 500
