@@ -13,17 +13,6 @@
         </option>
         {% endfor %}
     </select>
-
-    <!-- Category Filter -->
-    <label for="category">Filter by Category:</label>
-    <select id="category" name="category" onchange="this.form.submit()">
-        <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
-        {% for category in categories %}
-        <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>
-            {{ category }}
-        </option>
-        {% endfor %}
-    </select>
 </form>
 
 <!-- Debugging Info -->
@@ -54,30 +43,25 @@
         <tr>
             <!-- DateTime -->
             <td>{{ match.date }}</td>
-
             <!-- Round -->
             <td>{{ match.round }}</td>
-
-            <!-- Player 1 Name and Category -->
-            <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
+            <!-- Player 1 -->
+            <td {% if match.odds.player1 | float < match.odds.player2 | float %}class="highlight"{% endif %}>
                 {{ match.players.player1 }}
             </td>
             <td>{{ match.categories.player1 }}</td>
-
-            <!-- Player 2 Name and Category -->
-            <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
+            <!-- Player 2 -->
+            <td {% if match.odds.player2 | float < match.odds.player1 | float %}class="highlight"{% endif %}>
                 {{ match.players.player2 }}
             </td>
             <td>{{ match.categories.player2 }}</td>
-
             <!-- Odds -->
-            <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
+            <td {% if match.odds.player1 | float < match.odds.player2 | float %}class="highlight"{% endif %}>
                 {{ match.odds.player1 }}
             </td>
-            <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
+            <td {% if match.odds.player2 | float < match.odds.player1 | float %}class="highlight"{% endif %}>
                 {{ match.odds.player2 }}
             </td>
-
             <!-- Expected Points -->
             <td>{{ match.expected_points.player1 }}</td>
             <td>{{ match.expected_points.player2 }}</td>
@@ -85,4 +69,5 @@
         {% endfor %}
     </tbody>
 </table>
+
 {% endblock %}

@@ -42,12 +42,14 @@ async def football():
     selected_league = request.args.get("league", "eredivisie")
     cache_key = f"matches_{selected_league}"
     matches = current_app.redis_client.get(cache_key)
+    
     if matches:
         matches = json.loads(matches.decode("utf-8")) 
-
-    if not matches:
+        current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
+    else:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_football_signal.send(current_app._get_current_object(), league=selected_league)
+        current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
 
     return render_template("football.html", matches=matches or [], leagues=LEAGUES, selected_league=selected_league)
 
@@ -60,12 +62,14 @@ async def tennis():
     selected_league = request.args.get("league", "atp_australian_open")
     cache_key = f"tennis_matches_{selected_league}"
     matches = current_app.redis_client.get(cache_key)
-    if matches:
-        matches = json.loads(matches.decode("utf-8")) 
 
-    if not matches:
+    if matches:
+        matches = json.loads(matches.decode("utf-8"))
+        current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
+    else:
         flash("Data is being fetched; check back shortly.", "info")
         fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)
+        current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
 
     return render_template("tennis.html", matches=matches or [], leagues=TENNIS_LEAGUES, selected_league=selected_league)
 
@@ -162,3 +166,22 @@ def test_redis_matches():
     except Exception as e:
         return f"Error retrieving matches: {e}", 500
 
+@main_bp.route("/test-redis-write")
+def test_redis_write():
+    try:
+        test_data = [{"match_id": "test123", "home": "Team A", "away": "Team B", "odds": {"home": 1.5, "draw": 3.2, "away": 5.0}}]
+        current_app.redis_client.set("matches_eredivisie", json.dumps(test_data), ex=3600)
+        return "Test data written to Redis."
+    except Exception as e:
+        return f"Error writing to Redis: {e}", 500
+
+@main_bp.route("/test-redis-read")
+def test_redis_read():
+    try:
+        value = current_app.redis_client.get("matches_eredivisie")
+        if value:
+            matches = json.loads(value.decode("utf-8"))
+            return f"Test data retrieved: {matches}"
+        return "No data found for 'matches_eredivisie'."
+    except Exception as e:
+        return f"Error reading from Redis: {e}", 500

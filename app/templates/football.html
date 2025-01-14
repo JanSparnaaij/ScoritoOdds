@@ -39,19 +39,19 @@
     <tbody>
         {% for match in matches %}
         <tr>
-            <td {% if match.odds.home <= match.odds.draw and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+            <td {% if match.odds.home | float <= match.odds.draw | float and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
                 {{ match.home_team }}
             </td>
-            <td {% if match.odds.away <= match.odds.home and match.odds.away <= match.odds.draw %}class="highlight"{% endif %}>
+            <td {% if match.odds.away | float <= match.odds.home | float and match.odds.away | float <= match.odds.draw | float %}class="highlight"{% endif %}>
                 {{ match.away_team }}
             </td>
-            <td {% if match.odds.home <= match.odds.draw and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+            <td {% if match.odds.home | float <= match.odds.draw | float and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
                 {{ match.odds.home }}
             </td>
-            <td {% if match.odds.draw <= match.odds.home and match.odds.draw <= match.odds.away %}class="highlight"{% endif %}>
+            <td {% if match.odds.draw | float <= match.odds.home | float and match.odds.draw | float <= match.odds.away | float %}class="highlight"{% endif %}>
                 {{ match.odds.draw }}
             </td>
-            <td {% if match.odds.away <= match.odds.home and match.odds.away <= match.odds.draw %}class="highlight"{% endif %}>
+            <td {% if match.odds.away | float <= match.odds.home | float and match.odds.away | float <= match.odds.draw | float %}class="highlight"{% endif %}>
                 {{ match.odds.away }}
             </td>
         </tr>
@@ -62,7 +62,6 @@
 <script>
     function showLoading() {
         document.getElementById("loadingMessage").style.display = "block";
-        document.getElementById("noDataMessage").style.display = "none";
     }
 </script>
 
