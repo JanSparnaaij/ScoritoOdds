@@ -18,7 +18,7 @@ def create_app():
     redis_client = Redis.from_url(
         redis_url,
         ssl_cert_reqs="required",
-        ssl_ca_certs=r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.pem"
+        ssl_ca_certs="/certificate.pem"
     )
 
     # expose client

@@ -66,6 +66,8 @@ async def tennis():
 
     if matches:
         matches = json.loads(matches.decode("utf-8"))
+        # Sort matches by highest expected points
+        matches.sort(key=lambda match: max(match["expected_points"]["player1"], match["expected_points"]["player2"]), reverse=True)
         loading = False
         current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
     else:

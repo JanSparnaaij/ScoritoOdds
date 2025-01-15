@@ -50,10 +50,10 @@ def fetch_tennis_matches_in_background(league):
                     odds_player2 = match.get("odds", {}).get("away", None)
 
                     # Assign player categories and points
-                    category1 = PLAYER_RATINGS.get(player1, "?")
-                    category2 = PLAYER_RATINGS.get(player2, "?")
-                    points1 = {"A": 20, "B": 40, "C": 60, "D": 90}[category1]
-                    points2 = {"A": 20, "B": 40, "C": 60, "D": 90}[category2]
+                    category1 = PLAYER_RATINGS.get(player1, "E")
+                    category2 = PLAYER_RATINGS.get(player2, "E")
+                    points1 = {"A": 20, "B": 40, "C": 60, "D": 90}.get(category1, 0)
+                    points2 = {"A": 20, "B": 40, "C": 60, "D": 90}.get(category2, 0)
 
                     # Calculate expected points
                     prob1 = 1 / float(odds_player1) if odds_player1 else 0
