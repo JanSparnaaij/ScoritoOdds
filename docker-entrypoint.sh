@@ -1,15 +1,19 @@
 #!/bin/bash
-
 set -e
+echo "Entrypoint script executed with argument: $1"
 
-# Check the first argument to determine the role
-if [ "$1" = "web" ]; then
+case "$1" in
+  web)
     echo "Starting web service..."
     flask db upgrade && hypercorn --bind 0.0.0.0:${PORT} run:app
-elif [ "$1" = "worker" ]; then
+    ;;
+  worker)
     echo "Starting worker service..."
     celery -A app.celery_worker.celery worker --loglevel=info
-else
-    # Default behavior
-    exec "$@"
-fi
+    ;;
+  *)
+    echo "Invalid argument: $1"
+    echo "Usage: docker-entrypoint.sh [web|worker]"
+    exit 1
+    ;;
+esac
