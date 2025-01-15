@@ -32,35 +32,43 @@
 <table>
     <thead>
         <tr>
-            <th>Date</th>
+            <th>DateTime</th>
             <th>Round</th>
             <th>Player 1</th>
-            <th>Category 1</th>
+            <th>Player 1 Category</th>
             <th>Player 2</th>
-            <th>Category 2</th>
-            <th>Odds 1</th>
-            <th>Odds 2</th>
-            <th>Points 1</th>
-            <th>Points 2</th>
+            <th>Player 2 Category</th>
+            <th>Player 1 Odds</th>
+            <th>Player 2 Odds</th>
+            <th>Player 1 Expected Points</th>
+            <th>Player 2 Expected Points</th>
         </tr>
     </thead>
     <tbody>
         {% for match in matches %}
         <tr>
-            <td>{{ match.date }}</td>
-            <td>{{ match.round }}</td>
-            <td {% if match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
+            <td>{{ match.date or "Unknown" }}</td>
+            <td>{{ match.round or "Unknown" }}</td>
+            <td {% if match.odds and match.odds.get('home') is not none and match.odds.get('away') is not none and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
                 {{ match.home_player or "Unknown" }}
             </td>
             <td>{{ match.home_category or "Unknown" }}</td>
-            <td {% if match.odds.away | float < match.odds.home | float %}class="highlight"{% endif %}>
+            <td {% if match.odds and match.odds.get('away') is not none and match.odds.get('home') is not none and match.odds.away | float < match.odds.home | float %}class="highlight"{% endif %}>
                 {{ match.away_player or "Unknown" }}
             </td>
             <td>{{ match.away_category or "Unknown" }}</td>
-            <td>{{ match.odds.home or "N/A" }}</td>
-            <td>{{ match.odds.away or "N/A" }}</td>
-            <td>{{ match.expected_points.home or "N/A" }}</td>
-            <td>{{ match.expected_points.away or "N/A" }}</td>
+            <td>
+                {{ match.odds.home if match.odds and match.odds.get('home') is not none else "N/A" }}
+            </td>
+            <td>
+                {{ match.odds.away if match.odds and match.odds.get('away') is not none else "N/A" }}
+            </td>
+            <td>
+                {{ match.expected_points.home if match.expected_points and match.expected_points.get('home') is not none else "N/A" }}
+            </td>
+            <td>
+                {{ match.expected_points.away if match.expected_points and match.expected_points.get('away') is not none else "N/A" }}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

@@ -4,6 +4,7 @@ from blinker import signal
 from app.constants import LEAGUES, TENNIS_LEAGUES
 import re
 import json
+from app.models import db, User  # Lazy import of db
 
 # Blueprints
 main_bp = Blueprint("main", __name__)
@@ -78,11 +79,20 @@ async def tennis():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    from app.models import db, User  # Lazy import of db
+    from flask import current_app
+    current_app.logger.info(f"App context: {current_app}")
+    current_app.logger.info(f"DB instance type: {type(db)}")
+
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        user = db.session.query(User).filter_by(username=username).first()
+       
+        try:
+            user = User.query.filter_by(username=username).first()
+        except Exception as e:
+            current_app.logger.error(f"Error querying the database: {e}")
+            flash("An error occurred while processing your request.", "danger")
+            return render_template("login.html")
 
         if user and check_password_hash(user.password, password):
             session.clear()
@@ -96,7 +106,6 @@ def login():
 
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
-    from app.models import db, User  # Lazy import of db
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
@@ -205,3 +214,12 @@ def clear_tennis_cache():
     key = f"tennis_matches_atp_australian_open"
     current_app.redis_client.delete(key)
     return "Tennis cache cleared."
+
+@main_bp.route("/debug-tennis-data")
+def debug_tennis_data():
+    key = f"tennis_matches_atp_australian_open"  # Use the league you are testing
+    value = current_app.redis_client.get(key)
+    if value:
+        matches = json.loads(value.decode("utf-8"))
+        return matches  # This will return the data directly as JSON
+    return "No data found for the specified key."
