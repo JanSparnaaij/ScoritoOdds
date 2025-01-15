@@ -1,2 +1,0 @@
-web: gunicorn -b 0.0.0.0:$PORT run:app
-worker: celery -A app.celery_worker.celery worker --loglevel=info

@@ -5,7 +5,7 @@ FROM python:3.10-slim
 ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
-    PORT=8000  \
+    PORT=8000 \
     FLASK_APP=run:app
 
 # Install system dependencies
@@ -41,10 +41,12 @@ COPY . /app
 # Copy the SSL certificate
 COPY certificate.pem /certificate.pem
 
-RUN chmod 644 /certificate.pemchown u47048:dyno /certificate.pem
-
 # Expose the application port
 EXPOSE 8000
 
-# Start the web application
-CMD ["sh", "-c", "flask db upgrade && hypercorn --bind 0.0.0.0:${PORT} run:app"]
+# Define an entrypoint script to handle role-specific commands
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Use the entrypoint script
+ENTRYPOINT ["/docker-entrypoint.sh"]
