@@ -1,5 +1,4 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from redis import Redis
 from app.models import db
@@ -8,7 +7,6 @@ import os
 
 # Initialize extensions
 migrate = Migrate()
-db = SQLAlchemy()
 
 def create_app():
     """Application Factory"""
@@ -28,6 +26,7 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    print("DB initialized with app")
     migrate.init_app(app, db)
 
     # Register blueprints
