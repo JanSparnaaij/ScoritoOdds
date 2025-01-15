@@ -41,6 +41,8 @@ COPY . /app
 # Copy the SSL certificate
 COPY certificate.pem /certificate.pem
 
+RUN chmod 644 /certificate.pemchown u47048:dyno /certificate.pem
+
 # Expose the application port
 EXPOSE 8000
 
