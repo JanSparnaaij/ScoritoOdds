@@ -4,7 +4,7 @@ services:
   web:
     build:
       context: .
-    command: sh -c "flask db upgrade && hypercorn --bind 0.0.0.0:${PORT} run:app"
+    command: hypercorn --bind 0.0.0.0:8000 run:app
     ports:
       - "8000:8000"
     environment:
@@ -14,7 +14,7 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - FLASK_APP=${FLASK_APP}
-      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_ENV=development
     depends_on:
       - redis
     volumes:
@@ -24,3 +24,19 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+
+  worker:
+    build:
+      context: .
+    command: celery -A app.celery_worker.celery worker --loglevel=info
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - FLASK_ENV=development
+    depends_on:
+      - redis
+    volumes:
+      - .:/app

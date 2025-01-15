@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   web:
+    build:
+      context: .
+    command: sh -c "flask db upgrade && hypercorn --bind 0.0.0.0:8000 run:app"
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
@@ -9,6 +12,7 @@ services:
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - SSL_CERT_PATH=${SSL_CERT_PATH}
     deploy:
       replicas: 1
       resources:
@@ -17,6 +21,37 @@ services:
           memory: "512M"
     ports:
       - "80:8000"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: "256M"
+    volumes:
+      - redis-data:/data
+
+  worker:
+    build:
+      context: .
+    command: celery -A app.celery_worker.celery worker --loglevel=info
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - SSL_CERT_PATH=${SSL_CERT_PATH}
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: "256M"
     depends_on:
       - redis
 
