@@ -4,7 +4,7 @@ services:
   web:
     build:
       context: .
-    command: sh -c "flask db upgrade && hypercorn --bind 0.0.0.0:8000 run:app"
+    command: ["sh", "/docker-entrypoint.sh", "web"]
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
@@ -37,7 +37,7 @@ services:
   worker:
     build:
       context: .
-    command: celery -A app.celery_worker.celery worker --loglevel=info
+    command: ["sh", "/docker-entrypoint.sh", "worker"]
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
