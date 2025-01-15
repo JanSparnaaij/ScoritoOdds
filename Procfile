@@ -1,0 +1,1 @@
+web: flask db upgrade && hypercorn --bind 0.0.0.0:$PORT run:app
