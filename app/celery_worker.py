@@ -10,20 +10,27 @@ def create_celery_app(app=None):
         broker=redis_url,
         backend=redis_url,
         include=["app.tasks"],
-        broker_use_ssl={
-            "ssl_cert_reqs": "required",
-            "ssl_ca_certs": r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.pem"
-        },
-        redis_backend_use_ssl={
-            "ssl_cert_reqs": "required",
-            "ssl_ca_certs": r"C:\Users\JanSparnaaijDenofDat\source\repos\ScoritoOdds\certificate.pem"
-        }
     )
 
+    # Update configuration for SSL if using rediss://
+    if redis_url.startswith("rediss://"):
+        celery.conf.update(
+            broker_use_ssl={
+                "ssl_cert_reqs": "required",
+                "ssl_ca_certs": "/certificate.pem",  # Ensure this matches your Dockerfile path
+            },
+            redis_backend_use_ssl={
+                "ssl_cert_reqs": "required",
+                "ssl_ca_certs": "/certificate.pem",
+            }
+        )
+
+    # Update with Flask app configuration if app is provided
     if app:
         celery.conf.update(app.config)
         celery.conf.update({"broker_connection_retry_on_startup": True})
 
     return celery
 
+# Instantiate Celery without Flask app context
 celery = create_celery_app()
