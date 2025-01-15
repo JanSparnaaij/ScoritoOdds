@@ -38,6 +38,9 @@ RUN pip install playwright \
 WORKDIR /app
 COPY . /app
 
+# Copy the SSL certificate
+COPY certificate.pem /certificate.pem
+
 # Expose the application port
 EXPOSE 8000
 
