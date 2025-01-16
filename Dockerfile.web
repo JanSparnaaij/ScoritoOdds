@@ -54,5 +54,5 @@ LABEL "heroku.process.web"="docker-entrypoint.sh web"
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # Default argument for running the web service
-CMD ["docker-entrypoint.sh", "web"]
+CMD ["web"]
 
