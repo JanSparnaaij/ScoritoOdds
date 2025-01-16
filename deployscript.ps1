@@ -56,3 +56,6 @@ heroku open -a scoritoodds
 
 # Visit your app
 # https://scoritoodds.herokuapp.com
+
+# check running
+heroku ps -a scoritoodds
