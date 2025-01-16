@@ -5,6 +5,8 @@ services:
     build:
       context: .
     command: ["web"]
+    labels:
+      heroku.process.type: "web" 
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
@@ -38,7 +40,8 @@ services:
     build:
       context: .
     command: ["worker"]
-
+    labels:
+      heroku.process.type: "worker"  
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}

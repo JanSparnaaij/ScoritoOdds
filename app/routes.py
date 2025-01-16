@@ -225,3 +225,9 @@ def debug_tennis_data():
         matches = json.loads(value.decode("utf-8"))
         return matches  # This will return the data directly as JSON
     return "No data found for the specified key."
+
+@main_bp.route("/celery")
+def test_celery():
+    from app.tasks import fetch_tennis_matches_in_background
+    task = fetch_tennis_matches_in_background.delay("atp_australian_open")
+    return f"Task {task.id} sent to Celery"

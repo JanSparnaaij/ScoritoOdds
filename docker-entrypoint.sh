@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "Entrypoint script executed with argument: $1"
+echo "Entrypoint argument: $1" >> /tmp/entrypoint-debug.log
+echo "Running process as: $(whoami)" >> /tmp/entrypoint-debug.log
 
 case "$1" in
     web)
