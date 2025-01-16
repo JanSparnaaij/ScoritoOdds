@@ -7,16 +7,18 @@ services:
       dockerfile: Dockerfile.web
     command: ["web"]
     labels:
-      heroku.process.type: "web" 
+      heroku.process.type: "web"
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      - SSL_CERT_PATH=${SSL_CERT_PATH}
+      - result_backend=${CELERY_RESULT_BACKEND}
+      - SSL_CERT_PATH=/certificate.pem
       - PYTHONPATH=./app
+    volumes:
+      - ./certificate.pem:/certificate.pem:ro  # Mount the certificate
     deploy:
       replicas: 1
       resources:
@@ -44,16 +46,18 @@ services:
       dockerfile: Dockerfile.worker
     command: ["worker"]
     labels:
-      heroku.process.type: "worker"  
+      heroku.process.type: "worker"
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      - SSL_CERT_PATH=${SSL_CERT_PATH}
+      - result_backend=${CELERY_RESULT_BACKEND}
+      - SSL_CERT_PATH=/certificate.pem
       - PYTHONPATH=./app
+    volumes:
+      - ./certificate.pem:/certificate.pem:ro  # Mount the certificate
     deploy:
       replicas: 1
       resources:
