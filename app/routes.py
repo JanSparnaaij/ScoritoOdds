@@ -152,21 +152,6 @@ def test_cache():
     except Exception as e:
         return f"Cache connection failed: {e}", 500
     
-@main_bp.route("/cache-debug")
-def test_cache_debug():
-    from flask import current_app
-    try:
-        current_app.logger.info("Setting cache key...")
-        current_app.redis_client.set("test_key_cache", "test_value_cache", ex=60)
-        current_app.logger.info("Retrieving cache key...")
-        value = current_app.redis_client.get("test_key_cache")
-        if value:
-            value = value.decode("utf-8")
-        return f"Cache connected. Retrieved value: {value}"
-    except Exception as e:
-        current_app.logger.error(f"Cache connection failed: {e}")
-        return f"Cache connection failed: {e}", 500
-    
 @main_bp.route("/test-redis-matches")
 def test_redis_matches():
     try:

@@ -1,3 +1,4 @@
+from app import create_app
 from celery import Celery
 import os
 
@@ -29,21 +30,20 @@ def create_celery_app(app=None):
             redis_backend_use_ssl=ssl_config,
         )
 
-    # Update with Flask app configuration if app is provided
     if app:
         celery.conf.update(app.config)
 
-    celery.conf.update(
-        worker_concurrency=2,
-        worker_prefetch_multiplier=1,
-        task_acks_late=True,
-        task_soft_time_limit=300,
-        task_time_limit=360,
-        broker_heartbeat=10,
-        broker_connection_retry=True,
-        broker_connection_max_retries=5,
-    )
+        # Use Flask's app context for tasks
+        TaskBase = celery.Task
+        class ContextTask(TaskBase):
+            abstract = True
+            def __call__(self, *args, **kwargs):
+                with app.app_context():
+                    return TaskBase.__call__(self, *args, **kwargs)
+        celery.Task = ContextTask
 
     return celery
 
-celery = create_celery_app()
+# Flask app integration
+flask_app = create_app()
+celery = create_celery_app(flask_app)

@@ -4,6 +4,7 @@ services:
   web:
     build:
       context: .
+      dockerfile: Dockerfile.web
     command: ["web"]
     labels:
       heroku.process.type: "web" 
@@ -15,6 +16,7 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - SSL_CERT_PATH=${SSL_CERT_PATH}
+      - PYTHONPATH=./app
     deploy:
       replicas: 1
       resources:
@@ -39,6 +41,7 @@ services:
   worker:
     build:
       context: .
+      dockerfile: Dockerfile.worker
     command: ["worker"]
     labels:
       heroku.process.type: "worker"  
@@ -50,6 +53,7 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - SSL_CERT_PATH=${SSL_CERT_PATH}
+      - PYTHONPATH=./app
     deploy:
       replicas: 1
       resources:
