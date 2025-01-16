@@ -1,5 +1,5 @@
 from playwright.async_api import async_playwright
-from app import redis_client
+from flask import current_app
 import json
 import logging
 import asyncio
@@ -8,6 +8,8 @@ async def fetch_matches_and_cache(fetch_func, cache_key, fetch_args, logger, pro
     """
     Asynchronously fetch data using the fetch_func, process it using process_func, and cache the result.
     """
+    redis_client = current_app.redis_client
+
     try:
         logger.info(f"Starting data fetch for cache_key: {cache_key}")
         
@@ -24,7 +26,7 @@ async def fetch_matches_and_cache(fetch_func, cache_key, fetch_args, logger, pro
             logger.warning(f"Processing returned no data for cache_key: {cache_key}")
             return
 
-        # Store in Redis (update if using aioredis)
+        # Store in Redis
         await asyncio.to_thread(redis_client.set, cache_key, json.dumps(processed_data))
         logger.info(f"Successfully cached data under key: {cache_key}")
 
@@ -35,6 +37,8 @@ def log_task_status(logger, status, task_name, league=None):
     """
     Log the status of a Celery task in a structured format.
     """
+    redis_client = current_app.redis_client
+
     log_message = f"Task {task_name} has {status}."
     if league:
         log_message += f" League: {league}"
