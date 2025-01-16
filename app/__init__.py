@@ -33,6 +33,7 @@ def create_app():
     app.config.from_object("config.Config")
 
     # Initialize Redis
+    global redis_client
     redis_client = initialize_redis()
     app.redis_client = redis_client
 

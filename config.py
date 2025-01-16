@@ -16,13 +16,13 @@ class Config:
 
     # Redis Caching
     CACHE_TYPE = "RedisCache"
-    CACHE_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")  # Redis URL fallback
+    CACHE_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     CACHE_OPTIONS = {
         "connection_class": redis.StrictRedis,
         "ssl": True,
-        "ssl_cert_reqs": None,  # Disable SSL certificate verification
+        "ssl_cert_reqs": None,  # Disable SSL certificate verification for local development
     }
 
     # Celery Configuration
-    CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")  # Celery broker (Redis)
-    CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL", "redis://localhost:6379/0")  # Celery result backend
+    CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL", "redis://localhost:6379/0")

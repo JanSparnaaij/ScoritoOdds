@@ -7,11 +7,11 @@ echo "Running process as: $(whoami)" >> /tmp/entrypoint-debug.log
 case "$1" in
     web)
         echo "Starting web service..."
-        flask db upgrade && exec hypercorn --bind 0.0.0.0:${PORT} run:app
+        flask db upgrade && exec hypercorn --bind 0.0.0.0:${PORT:-8000} run:app
         ;;
     worker)
         echo "Starting worker service..."
-        exec celery -A app.celery_worker worker --loglevel=info --concurrency=1
+        exec celery -A app.celery_worker.celery worker --loglevel=info --concurrency=1
         ;;
     bash)
         echo "Starting bash shell for debugging..."
