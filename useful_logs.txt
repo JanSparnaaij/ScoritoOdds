@@ -1,0 +1,23 @@
+# Login to Heroku and Container Registry
+heroku login
+heroku container:login
+
+#!/bin/bash
+
+# Set environment variables
+heroku config:set FLASK_ENV=production PORT=8000 PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers -a scoritoodds
+
+# Scale the app
+heroku ps:scale web=1 worker=1 -a scoritoodds
+
+# View logs for debugging
+heroku logs --tail -a scoritoodds
+
+# Open the app
+heroku open -a scoritoodds
+
+# Visit your app
+# https://scoritoodds.herokuapp.com
+
+# check running
+heroku ps -a scoritoodds
