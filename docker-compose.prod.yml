@@ -4,7 +4,7 @@ services:
   web:
     build:
       context: .
-    command: ["sh", "/docker-entrypoint.sh", "web"]
+    command: ["web"]
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
@@ -37,7 +37,8 @@ services:
   worker:
     build:
       context: .
-    command: ["sh", "/docker-entrypoint.sh", "worker"]
+    command: ["worker"]
+
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}

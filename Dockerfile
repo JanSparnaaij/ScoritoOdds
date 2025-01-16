@@ -5,7 +5,6 @@ FROM python:3.10-slim
 ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
-    PORT=8000 \
     FLASK_APP=run:app
 
 # Install system dependencies
@@ -50,3 +49,7 @@ RUN chmod +x /docker-entrypoint.sh
 
 # Use the entrypoint script
 ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# Default argument for running the web service
+CMD ["web"]
+
