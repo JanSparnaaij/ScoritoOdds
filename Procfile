@@ -1,2 +1,2 @@
 web: docker-entrypoint.sh web
-worker: docker-entrypoint.sh worker
+worker: PYTHONPATH=./app celery -A app.tasks worker --loglevel=info

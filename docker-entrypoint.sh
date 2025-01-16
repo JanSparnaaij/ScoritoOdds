@@ -11,7 +11,7 @@ case "$1" in
         ;;
     worker)
         echo "Starting worker service..."
-        exec celery -A app.celery_worker worker --loglevel=info
+        exec celery -A app.celery_worker worker --loglevel=info --concurrency=1
         ;;
     bash)
         echo "Starting bash shell for debugging..."

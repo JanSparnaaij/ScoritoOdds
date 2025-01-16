@@ -4,7 +4,8 @@ services:
   web:
     build:
       context: .
-    command: hypercorn --bind 0.0.0.0:8000 run:app
+      dockerfile: Dockerfile.web
+    command: ["web"]  # Matches the 'web' case in your entrypoint script
     ports:
       - "8000:8000"
     environment:
@@ -14,29 +15,28 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - FLASK_APP=${FLASK_APP}
-      - FLASK_ENV=development
+      - FLASK_ENV=production
+      - PYTHONPATH=./app
     depends_on:
       - redis
-    volumes:
-      - .:/app
-
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
 
   worker:
     build:
       context: .
-    command: celery -A app.celery_worker.celery worker --loglevel=info
+      dockerfile: Dockerfile.worker
+    command: ["worker"]  # Matches the 'worker' case in your entrypoint script
     environment:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      - FLASK_ENV=development
+      - FLASK_ENV=production
+      - PYTHONPATH=./app
     depends_on:
       - redis
-    volumes:
-      - .:/app
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"

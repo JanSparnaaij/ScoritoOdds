@@ -1,8 +1,6 @@
-# Login to Heroku and Container Registry
-heroku login
-heroku container:login
-
-#!/bin/bash
+## Run the followign in git bash:
+# chmod +x deployscript.sh
+# ./deployscript.sh
 
 # Build and push Docker images
 echo "Switching to web Dockerfile and pushing the web image..."
@@ -39,23 +37,5 @@ if [ $? -ne 0 ]; then
   echo "Failed to release the worker image. Exiting."
   exit 1
 fi
-
 echo "Successfully deployed web and worker images to Heroku!"
 
-# Set environment variables
-heroku config:set FLASK_ENV=production PORT=8000 PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers -a scoritoodds
-
-# Scale the app
-heroku ps:scale web=1 worker=1 -a scoritoodds
-
-# View logs for debugging
-heroku logs --tail -a scoritoodds
-
-# Open the app
-heroku open -a scoritoodds
-
-# Visit your app
-# https://scoritoodds.herokuapp.com
-
-# check running
-heroku ps -a scoritoodds
