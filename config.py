@@ -1,6 +1,5 @@
 import os
 import redis
-from kombu import Connection
 
 class Config:
     # General Flask Config
@@ -20,20 +19,21 @@ class Config:
     CACHE_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     CACHE_OPTIONS = {
         "connection_class": redis.StrictRedis,
-        "ssl": True,  # Enable SSL
-        "ssl_ca_certs": "/certificate.pem",  # Path to your certificate
-        "ssl_cert_reqs": "CERT_REQUIRED",  # Validate the certificate
+        "ssl_ca_certs": os.getenv("SSL_CERT_PATH", "/certificate.pem"),  # Path to your certificate
+        "ssl_cert_reqs": "CERT_OPTIONAL",  # Validate the certificate
     }
 
     # Celery Configuration
     CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     result_backend = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-
-    # Kombu SSL options for Celery
-    broker_transport_options = {
-        "visibility_timeout": 3600,  # Optional: set timeout for Celery worker
+    CELERY_BROKER_TRANSPORT_OPTIONS = {
+        "visibility_timeout": 3600,
         "ssl": {
-            "ssl_cert_reqs": "CERT_REQUIRED",  # Validate the certificate
+            "ssl_cert_reqs": "CERT_OPTIONAL",  # Ensure this is correct
             "ssl_ca_certs": "/certificate.pem",  # Path to your certificate
-        }
+        },
+    }
+    result_backend_transport_options = {
+        "ssl_cert_reqs": "CERT_OPTIONAL",
+        "ssl_ca_certs": "/certificate.pem",
     }

@@ -17,9 +17,9 @@ fetch_football_signal = signal("fetch-football")
 # Signal Handlers
 @fetch_football_signal.connect
 def handle_fetch_football(sender, league):
-    from app.tasks import fetch_matches_in_background
+    from app.tasks import fetch_football_in_background
     current_app.logger.info(f"Signal received to fetch football data for league: {league}")
-    fetch_matches_in_background.delay(league)
+    fetch_football_in_background.delay(league)
 
 @fetch_tennis_signal.connect
 def handle_fetch_tennis(sender, league):

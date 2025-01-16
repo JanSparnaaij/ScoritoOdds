@@ -15,7 +15,6 @@ services:
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - result_backend=${CELERY_RESULT_BACKEND}
-      - SSL_CERT_PATH=/certificate.pem
       - PYTHONPATH=./app
     volumes:
       - ./certificate.pem:/certificate.pem:ro  # Mount the certificate
