@@ -47,9 +47,12 @@ EXPOSE 8000
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
+# Label for Heroku web process
+LABEL "heroku.process.web"="docker-entrypoint.sh web"
+
 # Use the entrypoint script
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # Default argument for running the web service
-CMD ["web"]
+CMD ["docker-entrypoint.sh", "web"]
 

@@ -25,6 +25,7 @@ def fetch_tennis_matches_in_background(league):
     """Fetch and process tennis matches for a specific league."""
     app = get_app_context()
     with app.app_context():
+        app.logger.info(f"Task started for league: {league}")
         from app.constants import TENNIS_LEAGUES
         league_urls = TENNIS_LEAGUES.get(league, {})
         matches_url = league_urls.get("matches")
@@ -163,3 +164,8 @@ def fetch_matches_in_background(league):
         finally:
             # Release task lock
             app.redis_client.delete(task_lock_key)
+
+@celery.task(name="app.tasks.test_task")
+def test_task():
+    print("Test task executed.")
+    return "Success"
