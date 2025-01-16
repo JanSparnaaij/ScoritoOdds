@@ -54,5 +54,5 @@ LABEL "heroku.process.worker"="docker-entrypoint.sh worker"
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # Default argument for running the worker service
-CMD ["docker-entrypoint.sh", "worker"]
+CMD ["worker"]
 
