@@ -1,65 +1,49 @@
-from playwright.async_api import async_playwright
-from flask import current_app
-import json
-import logging
 import asyncio
+from flask import current_app
+from playwright.async_api import async_playwright
+from app.fetchers import fetch_tennis_matches_async
 
-async def fetch_matches_and_cache(fetch_func, cache_key, fetch_args, logger, process_func):
+async def fetch_combined_tennis_data(matches_url: str, rounds_url: str) -> list:
     """
-    Asynchronously fetch data using the fetch_func, process it using process_func, and cache the result.
-    """
-    redis_client = current_app.redis_client
+    Asynchronously fetch combined tennis match data from the given URLs.
 
+    Args:
+        matches_url (str): The URL of the matches page.
+        rounds_url (str): The URL of the rounds page (not currently used).
+
+    Returns:
+        list: A list of dictionaries containing match details and odds.
+    """
     try:
-        logger.info(f"Starting data fetch for cache_key: {cache_key}")
+        # Log the start of the fetch operation
+        print(f"Fetching tennis data from: {matches_url}")
         
-        # Run the async fetch_func directly
-        data = await fetch_func(*fetch_args)
-
+        # Fetch asynchronously using `fetch_tennis_matches_async`
+        data = await fetch_tennis_matches_async(matches_url)
+        
+        # Log the results
         if not data:
-            logger.warning(f"No data fetched for cache_key: {cache_key}")
-            return
-
-        # Process and cache the data
-        processed_data = process_func(data)
-        if not processed_data:
-            logger.warning(f"Processing returned no data for cache_key: {cache_key}")
-            return
-
-        # Store in Redis
-        await asyncio.to_thread(redis_client.set, cache_key, json.dumps(processed_data))
-        logger.info(f"Successfully cached data under key: {cache_key}")
-
+            print(f"No data found for URL: {matches_url}")
+        else:
+            print(f"Successfully fetched {len(data)} matches from {matches_url}")
+        
+        return data
     except Exception as e:
-        logger.error(f"Error in fetch_matches_and_cache for cache_key {cache_key}: {str(e)}")
+        # Handle and log errors gracefully
+        print(f"Error fetching combined tennis data: {e}")
+        return []
 
 def log_task_status(logger, status, task_name, league=None):
     """
     Log the status of a Celery task in a structured format.
+    
+    Args:
+        logger: The logger instance to log messages.
+        status (str): The current status of the task (e.g., "start", "complete").
+        task_name (str): The name of the Celery task.
+        league (str, optional): The league name related to the task.
     """
-    redis_client = current_app.redis_client
-
     log_message = f"Task {task_name} has {status}."
     if league:
         log_message += f" League: {league}"
     logger.info(log_message)
-
-async def get_browser(app):
-    """Get or create a shared Playwright browser instance."""
-    if not hasattr(app, "_playwright_browser"):
-        playwright = await async_playwright().start()
-        browser = await playwright.chromium.launch(
-            headless=True, 
-            args=["--disable-dev-shm-usage"]
-        )
-        app._playwright_browser = browser
-        app._playwright_context = playwright
-    return app._playwright_browser
-
-async def close_browser(app):
-    """Close the shared Playwright browser instance."""
-    if hasattr(app, "_playwright_browser"):
-        await app._playwright_browser.close()
-        await app._playwright_context.stop()
-        del app._playwright_browser
-        del app._playwright_context
