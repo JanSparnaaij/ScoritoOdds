@@ -2,8 +2,10 @@ from app.utils import get_browser
 from app.player_ratings import PLAYER_RATINGS
 from flask import current_app
 import asyncio
-from app.utils import get_browser
+from app.browser import get_browser
 from flask import current_app
+import nest_asyncio
+
 
 async def fetch_football_matches_async(league_url):
     """
@@ -99,20 +101,20 @@ async def fetch_tennis_matches_async(league_url):
         list: List of dictionaries containing match details and odds.
     """
     app = current_app._get_current_object()
-    browser = await get_browser(app)
+    browser = await get_browser(app)  # Use the shared browser instance
     all_matches = []
 
     try:
         page = await browser.new_page()
-        print(f"Navigating to league: {league_url}")
+        app.logger.info(f"Navigating to league: {league_url}")
         await page.goto(league_url, timeout=30000)
-        print("League page loaded successfully!")
+        app.logger.info("League page loaded successfully!")
 
         # Wait for match containers to load
         await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=30000)
         match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')
         match_count = await match_containers.count()
-        print(f"Found {match_count} match containers.")
+        app.logger.info(f"Found {match_count} match containers.")
 
         for i in range(match_count):
             container = match_containers.nth(i)
@@ -149,18 +151,19 @@ async def fetch_tennis_matches_async(league_url):
                 }
                 all_matches.append(match_data)
             except Exception as e:
-                print(f"Error processing match {i + 1}: {e}")
+                app.logger.error(f"Error processing match {i + 1}: {e}")
                 continue
 
-        print(f"Extracted {len(all_matches)} matches.")
+        app.logger.info(f"Extracted {len(all_matches)} matches.")
         return all_matches
 
     except Exception as e:
-        print(f"Error fetching tennis matches: {e}")
+        app.logger.error(f"Error fetching tennis matches: {e}")
         return all_matches  # Return whatever was fetched even if incomplete
-    finally:
-        await page.close()
 
+    finally:
+        if page:
+            await page.close()  # Ensure the page is closed
 
 def fetch_combined_tennis_data(matches_url, rounds_url):
     """
@@ -174,7 +177,37 @@ def fetch_combined_tennis_data(matches_url, rounds_url):
         list: Match details.
     """
     try:
-        return asyncio.run(fetch_tennis_matches_async(matches_url))
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # Create a task for the coroutine to avoid nested asyncio.run issues
+            return asyncio.ensure_future(fetch_tennis_matches_async(matches_url))
+        else:
+            # Run the coroutine directly if no loop is running
+            return asyncio.run(fetch_tennis_matches_async(matches_url))
+    except Exception as e:
+        print(f"Error fetching combined tennis data: {e}")
+        return []
+
+def fetch_combined_tennis_data(matches_url, rounds_url):
+    """
+    Fetch tennis matches synchronously using the async fetcher.
+
+    Args:
+        matches_url (str): Matches URL.
+        rounds_url (str): Rounds URL (not currently used).
+
+    Returns:
+        list: Match details.
+    """
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # Create a task for the coroutine to avoid nested asyncio.run issues
+            future = asyncio.ensure_future(fetch_tennis_matches_async(matches_url))
+            return loop.run_until_complete(future)
+        else:
+            # Run the coroutine directly if no loop is running
+            return asyncio.run(fetch_tennis_matches_async(matches_url))
     except Exception as e:
         print(f"Error fetching combined tennis data: {e}")
         return []

@@ -16,12 +16,7 @@ nest_asyncio.apply()
 def fetch_tennis_matches_in_background(league: str) -> None:
     """
     Fetch and process tennis matches for a specific league.
-
-    Args:
-        league (str): League name as defined in TENNIS_LEAGUES.
     """
-    from flask import current_app
-
     try:
         log_task_status(logger, "start", task_name="fetch_tennis_matches_in_background", league=league)
 
@@ -33,30 +28,15 @@ def fetch_tennis_matches_in_background(league: str) -> None:
             logger.warning(f"Invalid tennis league: {league}")
             return
 
-        # Ensure the event loop is properly managed
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Use `create_task` if already in an event loop (like Celery)
-            task = loop.create_task(
-                fetch_matches_and_cache(
-                    fetch_func=fetch_combined_tennis_data,
-                    cache_key=f"tennis_matches_{league}",
-                    fetch_args=(matches_url, rounds_url),
-                    logger=logger,
-                    process_func=process_tennis_matches,
-                )
+        asyncio.run(
+            fetch_matches_and_cache(
+                fetch_func=fetch_combined_tennis_data,
+                cache_key=f"tennis_matches_{league}",
+                fetch_args=(matches_url, rounds_url),
+                logger=logger,
+                process_func=process_tennis_matches,
             )
-            loop.run_until_complete(task)
-        else:
-            asyncio.run(
-                fetch_matches_and_cache(
-                    fetch_func=fetch_combined_tennis_data,
-                    cache_key=f"tennis_matches_{league}",
-                    fetch_args=(matches_url, rounds_url),
-                    logger=logger,
-                    process_func=process_tennis_matches,
-                )
-            )
+        )
     except Exception as e:
         logger.error(f"Error in fetch_tennis_matches_in_background for league {league}: {e}")
 
