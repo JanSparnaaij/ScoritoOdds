@@ -1,11 +1,8 @@
-from app.utils import get_browser
 from app.player_ratings import PLAYER_RATINGS
 from flask import current_app
 import asyncio
 from app.browser import get_browser
 from flask import current_app
-import nest_asyncio
-
 
 async def fetch_football_matches_async(league_url):
     """

@@ -3,6 +3,53 @@ from flask import current_app
 from playwright.async_api import async_playwright
 from app.fetchers import fetch_tennis_matches_async
 
+import asyncio
+import json
+from flask import current_app
+
+
+async def fetch_matches_and_cache(fetch_func, cache_key, fetch_args, logger, process_func):
+    """
+    Asynchronously fetch data using the fetch_func, process it using process_func, and cache the result.
+
+    Args:
+        fetch_func (callable): Async function to fetch data (e.g., fetch_tennis_matches_async).
+        cache_key (str): Redis key to store the cached data.
+        fetch_args (tuple): Arguments to pass to the fetch_func.
+        logger (Logger): Logger instance for logging messages.
+        process_func (callable): Function to process fetched data before caching.
+
+    Returns:
+        None
+    """
+    try:
+        logger.info(f"Starting data fetch for cache_key: {cache_key}")
+
+        # Fetch data asynchronously
+        data = await fetch_func(*fetch_args)
+
+        if not data:
+            logger.warning(f"No data fetched for cache_key: {cache_key}")
+            return
+
+        # Ensure process_func is called correctly (await if async)
+        if asyncio.iscoroutinefunction(process_func):
+            processed_data = await process_func(data)
+        else:
+            processed_data = process_func(data)
+
+        if not processed_data:
+            logger.warning(f"Processing returned no data for cache_key: {cache_key}")
+            return
+
+        # Cache the processed data
+        redis_client = current_app.redis_client
+        await asyncio.to_thread(redis_client.set, cache_key, json.dumps(processed_data))
+        logger.info(f"Successfully cached data under key: {cache_key}")
+
+    except Exception as e:
+        logger.error(f"Error in fetch_matches_and_cache for cache_key {cache_key}: {e}")
+
 async def fetch_combined_tennis_data(matches_url: str, rounds_url: str) -> list:
     """
     Asynchronously fetch combined tennis match data from the given URLs.
