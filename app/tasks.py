@@ -38,14 +38,24 @@ def fetch_tennis_matches_in_background(league: str) -> None:
                     logger=logger,
                     process_func=process_tennis_matches,
                 )
+            except Exception as e:
+                logger.error(f"Error fetching tennis matches: {e}")
             finally:
-                await close_browser(current_app)
+                try:
+                    await close_browser(current_app)
+                except Exception as e:
+                    logger.error(f"Error closing browser: {e}")
 
-        # Run the async task logic
-        asyncio.run(task_logic())
+        # Use a new event loop to avoid conflicts
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(task_logic())
+        finally:
+            loop.close()
+
     except Exception as e:
         logger.error(f"Error in fetch_tennis_matches_in_background for league {league}: {e}")
-
 
 @celery.task(name="app.tasks.fetch_football_in_background")
 def fetch_football_in_background(league: str) -> None:
