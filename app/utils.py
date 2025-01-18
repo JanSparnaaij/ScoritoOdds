@@ -32,12 +32,8 @@ async def fetch_matches_and_cache(fetch_func, cache_key, fetch_args, logger, pro
             logger.warning(f"No data fetched for cache_key: {cache_key}")
             return
 
-        # Ensure process_func is called correctly (await if async)
-        if asyncio.iscoroutinefunction(process_func):
-            processed_data = await process_func(data)
-        else:
-            processed_data = process_func(data)
-
+        # Process the data
+        processed_data = await asyncio.to_thread(process_func, data)  # Run sync function in thread pool
         if not processed_data:
             logger.warning(f"Processing returned no data for cache_key: {cache_key}")
             return
@@ -62,21 +58,8 @@ async def fetch_combined_tennis_data(matches_url: str, rounds_url: str) -> list:
         list: A list of dictionaries containing match details and odds.
     """
     try:
-        # Log the start of the fetch operation
-        print(f"Fetching tennis data from: {matches_url}")
-        
-        # Fetch asynchronously using `fetch_tennis_matches_async`
-        data = await fetch_tennis_matches_async(matches_url)
-        
-        # Log the results
-        if not data:
-            print(f"No data found for URL: {matches_url}")
-        else:
-            print(f"Successfully fetched {len(data)} matches from {matches_url}")
-        
-        return data
+        return await fetch_tennis_matches_async(matches_url)
     except Exception as e:
-        # Handle and log errors gracefully
         print(f"Error fetching combined tennis data: {e}")
         return []
 

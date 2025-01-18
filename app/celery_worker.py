@@ -1,6 +1,9 @@
 from app import create_app
 from celery import Celery
+import nest_asyncio
 import os
+
+nest_asyncio.apply()
 
 def create_celery_app(app=None):
     """Create and configure a Celery application instance."""
