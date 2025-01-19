@@ -2,6 +2,8 @@ from app.player_ratings import PLAYER_RATINGS
 from flask import current_app
 from app.browser import get_browser
 from flask import current_app
+from datetime import datetime, timedelta
+from app.constants import AUSTRALIAN_OPEN_SCHEDULE
 
 async def fetch_football_matches_async(league_url):
     """
@@ -86,6 +88,27 @@ async def fetch_football_matches_async(league_url):
         app.logger.error(f"Error fetching matches: {e}")
         return []
 
+def determine_round(match_date: str) -> str:
+    """
+    Determine the round of the Australian Open based on the match date.
+
+    Args:
+        match_date (str): The match date in the format "YYYY-MM-DD".
+
+    Returns:
+        str: The corresponding round name, or "Unknown" if no match is found.
+    """
+    try:
+        match_date_obj = datetime.strptime(match_date, "%Y-%m-%d")
+        for round_name, dates in AUSTRALIAN_OPEN_SCHEDULE.items():
+            start_date = datetime.strptime(dates["start"], "%Y-%m-%d")
+            end_date = datetime.strptime(dates["end"], "%Y-%m-%d")
+            if start_date <= match_date_obj <= end_date:
+                return round_name
+        return "Unknown"
+    except ValueError:
+        return "Unknown"  # Handle invalid date formats
+
 async def fetch_tennis_matches_async(league_url):
     """
     Fetch tennis match details asynchronously from OddsPortal.
@@ -99,6 +122,8 @@ async def fetch_tennis_matches_async(league_url):
     app = current_app._get_current_object()
     browser = await get_browser(app)  # Use the shared browser instance
     all_matches = []
+    current_date = None
+    seen_matches = set()
 
     try:
         page = await browser.new_page()
@@ -106,74 +131,93 @@ async def fetch_tennis_matches_async(league_url):
         await page.goto(league_url, timeout=30000)
         app.logger.info("League page loaded successfully!")
 
-        # Wait for match containers to load
-        await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=30000)
-        match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')
-        match_count = await match_containers.count()
-        app.logger.info(f"Found {match_count} match containers.")
+        # Wait for the match container rows
+        await page.wait_for_selector('div[data-v-b8d70024]', timeout=30000)
+        rows = page.locator('div[data-v-b8d70024]')
+        row_count = await rows.count()
+        app.logger.info(f"Found {row_count} rows.")
 
-        for i in range(match_count):
-            container = match_containers.nth(i)
+        for i in range(row_count):
+            row = rows.nth(i)
             try:
-                # Extract player names and categories
-                home_player = await container.locator('a[title]').nth(0).text_content(timeout=5000)
-                away_player = await container.locator('a[title]').nth(1).text_content(timeout=5000)
-                app.logger.debug(f"Extracted home raw: {repr(home_player)}")
+                # Check if the row contains a date
+                if await row.locator('.text-black-main.font-main').count() > 0:
+                    # Extract the current date
+                    date_text = (await row.locator('.text-black-main.font-main').first.text_content(timeout=5000)).strip()
+                    app.logger.debug(f"Extracted date text: {date_text}")
 
-                # Extract odds
-                odds = container.locator('div[data-v-34474325] p')
-                home_odd = float(await odds.nth(0).text_content(timeout=5000))
-                away_odd = float(await odds.nth(1).text_content(timeout=5000))
+                    # Remove prefixes like "Today" or "Tomorrow" if present
+                    if "Today" in date_text:
+                        current_date = datetime.now().strftime("%d-%m-%Y")
+                    elif "Tomorrow" in date_text:
+                        current_date = (datetime.now() + timedelta(days=1)).strftime("%d-%m-%Y")
+                    else:
+                        # Parse and reformat the date
+                        try:
+                            current_date = datetime.strptime(date_text, "%d %b %Y").strftime("%d-%m-%Y")
+                        except ValueError as e:
+                            app.logger.error(f"Error parsing date: {date_text}, {e}")
+                            current_date = "Unknown"
+                    continue  # Skip processing further as this is a date row
+                    
+                # Check if the row contains match data
+                if await row.locator('a[title]').count() > 0:
+                    # Extract player names
+                    home_player = await row.locator('a[title]').nth(0).text_content(timeout=5000)
+                    away_player = await row.locator('a[title]').nth(1).text_content(timeout=5000)
 
-                # category
-                home_category = PLAYER_RATINGS.get(home_player, "Unknown")
-                away_category = PLAYER_RATINGS.get(away_player, "Unknown")
+                    # Create a unique identifier for deduplication
+                    match_id = f"{home_player.strip()} vs {away_player.strip()}"
+                    if match_id in seen_matches:
+                        app.logger.debug(f"Duplicate match found: {match_id}")
+                        continue
+                    seen_matches.add(match_id)
 
-                CATEGORY_POINTS = {
-                    "A": 60,
-                    "B": 100,
-                    "C": 140,
-                    "D": 180,
-                }
+                    # Extract odds
+                    odds = row.locator('div[data-v-34474325] p')
+                    home_odd = float(await odds.nth(0).text_content(timeout=5000))
+                    away_odd = float(await odds.nth(1).text_content(timeout=5000))
 
-                # Get category points for each player
-                home_points = CATEGORY_POINTS.get(home_category, 0)
-                away_points = CATEGORY_POINTS.get(away_category, 0)
+                    # Determine round based on the current date
+                    round_name = determine_round(current_date)
 
-                # Calculate win probabilities based on odds
-                home_win_probability = round(100 / home_odd, 2)  # % chance to win
-                away_win_probability = round(100 / away_odd, 2)
+                    # Category and points calculations
+                    home_category = PLAYER_RATINGS.get(home_player, "Unknown")
+                    away_category = PLAYER_RATINGS.get(away_player, "Unknown")
+                    CATEGORY_POINTS = {"A": 60, "B": 100, "C": 140, "D": 180}
+                    home_points = CATEGORY_POINTS.get(home_category, 0)
+                    away_points = CATEGORY_POINTS.get(away_category, 0)
+                    home_win_probability = round(100 / home_odd, 2)
+                    away_win_probability = round(100 / away_odd, 2)
+                    expected_home_point = round(home_win_probability * home_points / 100, 2)
+                    expected_away_point = round(away_win_probability * away_points / 100, 2)
 
-                # Calculate expected points
-                expected_home_point = round(home_win_probability * home_points / 100, 2)
-                expected_away_point = round(away_win_probability * away_points / 100, 2)
-
-                # Construct match data
-                match_data = {
-                    "date": "Unknown",  # Placeholder
-                    "round": "R?",  # Placeholder for round
-                    "home_player": home_player,
-                    "away_player": away_player,
-                    "odds": {
-                        "home": home_odd,
-                        "away": away_odd,
-                    },
-                    "expected_points": {
-                        "home": expected_home_point,
-                        "away": expected_away_point,
-                    },
-                    "categories": {
-                        "player1": home_category,
-                        "player2": away_category,
-                    },
-                }
-                all_matches.append(match_data)
+                    # Construct match data
+                    match_data = {
+                        "date": current_date or "Unknown",
+                        "round": round_name,
+                        "home_player": home_player.strip(),
+                        "away_player": away_player.strip(),
+                        "odds": {
+                            "home": home_odd,
+                            "away": away_odd,
+                        },
+                        "expected_points": {
+                            "home": expected_home_point,
+                            "away": expected_away_point,
+                        },
+                        "categories": {
+                            "player1": home_category,
+                            "player2": away_category,
+                        },
+                    }
+                    all_matches.append(match_data)
             except Exception as e:
-                app.logger.error(f"Error processing match {i + 1}: {e}")
+                app.logger.error(f"Error processing row {i + 1}: {e}")
                 continue
 
         app.logger.info(f"Extracted {len(all_matches)} matches.")
-        return all_matches
+        return all_matches  # Moved outside the loop
 
     except Exception as e:
         app.logger.error(f"Error fetching tennis matches: {e}")
