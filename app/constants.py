@@ -22,3 +22,13 @@ TENNIS_LEAGUES = {
         "rounds": "https://www.oddsportal.com/tennis/australia/wta-australian-open/standings/",
     },
 }
+
+AUSTRALIAN_OPEN_SCHEDULE = {
+    "First Round": {"start": "2025-01-12", "end": "2025-01-14"},
+    "Second Round": {"start": "2025-01-15", "end": "2025-01-16"},
+    "Third Round": {"start": "2025-01-17", "end": "2025-01-18"},
+    "Fourth Round": {"start": "2025-01-19", "end": "2025-01-20"},
+    "Quarterfinals": {"start": "2025-01-21", "end": "2025-01-22"},
+    "Semifinals": {"start": "2025-01-23", "end": "2025-01-24"},
+    "Finals": {"start": "2025-01-25", "end": "2025-01-26"},
+}
