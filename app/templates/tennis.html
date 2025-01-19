@@ -49,29 +49,29 @@
         <tr>
             <td>{{ match.date or "Unknown" }}</td>
             <td>{{ match.round or "Unknown" }}</td>
-            <td {% if match.odds and match.odds.player1 <= match.odds.player2 %}class="highlight"{% endif %}>
-                {{ match.players.player1 or "Unknown" }}
+            <td {% if match.odds and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.players.home or "Unknown" }}
             </td>
-            <td {% if match.odds and match.odds.player1 <= match.odds.player2 %}class="highlight"{% endif %}>
-                {{ match.categories.player1 or "Unknown" }}
+            <td {% if match.odds and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.categories.home or "Unknown" }}
             </td>
-            <td {% if match.odds and match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
-                {{ match.players.player2 or "Unknown" }}
+            <td {% if match.odds and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.players.away or "Unknown" }}
             </td>
-            <td {% if match.odds and match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
-                {{ match.categories.player2 or "Unknown" }}
+            <td {% if match.odds and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.categories.away or "Unknown" }}
             </td>
-            <td {% if match.odds and match.odds.player1 <= match.odds.player2 %}class="highlight"{% endif %}>
-                {{ match.odds.player1 if match.odds and match.odds.player1 is not none else "N/A" }}
+            <td {% if match.odds and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.odds.home if match.odds and match.odds.home is not none else "N/A" }}
             </td>
-            <td {% if match.odds and match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
-                {{ match.odds.player2 if match.odds and match.odds.player2 is not none else "N/A" }}
+            <td {% if match.odds and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.odds.away if match.odds and match.odds.away is not none else "N/A" }}
             </td>
-            <td {% if match.expected_points and match.odds.player1 <= match.odds.player2 %}class="highlight"{% endif %}>
-                {{ match.expected_points.player1 if match.expected_points and match.expected_points.player1 is not none else "N/A" }}
+            <td {% if match.expected_points and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.expected_points.home if match.expected_points and match.expected_points.home is not none else "N/A" }}
             </td>
-            <td {% if match.expected_points and match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
-                {{ match.expected_points.player2 if match.expected_points and match.expected_points.player2 is not none else "N/A" }}
+            <td {% if match.expected_points and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.expected_points.away if match.expected_points and match.expected_points.away is not none else "N/A" }}
             </td>
         </tr>
         {% endfor %}

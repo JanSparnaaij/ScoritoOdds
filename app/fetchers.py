@@ -162,7 +162,7 @@ async def fetch_tennis_matches_async(league_url):
         if page:
             await page.close()  # Ensure the page is closed
 
-def fetch_combined_tennis_data(matches_url, rounds_url):
+async def fetch_combined_tennis_data(matches_url: str, rounds_url: str) -> list:
     """
     Fetch tennis matches synchronously using the async fetcher.
 
@@ -174,37 +174,12 @@ def fetch_combined_tennis_data(matches_url, rounds_url):
         list: Match details.
     """
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Create a task for the coroutine to avoid nested asyncio.run issues
-            return asyncio.ensure_future(fetch_tennis_matches_async(matches_url))
+        data = await fetch_tennis_matches_async(matches_url)
+        if not data:
+            print(f"No data fetched from: {matches_url}")
         else:
-            # Run the coroutine directly if no loop is running
-            return asyncio.run(fetch_tennis_matches_async(matches_url))
-    except Exception as e:
-        print(f"Error fetching combined tennis data: {e}")
-        return []
-
-def fetch_combined_tennis_data(matches_url, rounds_url):
-    """
-    Fetch tennis matches synchronously using the async fetcher.
-
-    Args:
-        matches_url (str): Matches URL.
-        rounds_url (str): Rounds URL (not currently used).
-
-    Returns:
-        list: Match details.
-    """
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Create a task for the coroutine to avoid nested asyncio.run issues
-            future = asyncio.ensure_future(fetch_tennis_matches_async(matches_url))
-            return loop.run_until_complete(future)
-        else:
-            # Run the coroutine directly if no loop is running
-            return asyncio.run(fetch_tennis_matches_async(matches_url))
+            print(f"Fetched {len(data)} matches from: {matches_url}")
+        return data
     except Exception as e:
         print(f"Error fetching combined tennis data: {e}")
         return []
