@@ -178,8 +178,11 @@ async def fetch_tennis_matches_async(league_url):
                     home_odd = float(await odds.nth(0).text_content(timeout=5000))
                     away_odd = float(await odds.nth(1).text_content(timeout=5000))
 
-                    # Determine round based on the current date
-                    round_name = determine_round(current_date)
+                    # Determine the round based on the current date
+                    if current_date and current_date != "Unknown":
+                        round_name = determine_round(datetime.strptime(current_date, "%d-%m-%Y").strftime("%Y-%m-%d"))
+                    else:
+                        round_name = "Unknown"
 
                     # Category and points calculations
                     home_category = PLAYER_RATINGS.get(home_player, "Unknown")
