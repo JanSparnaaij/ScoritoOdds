@@ -2,7 +2,6 @@ from app.celery_worker import celery
 from app.utils import fetch_matches_and_cache, log_task_status
 from app.constants import TENNIS_LEAGUES, LEAGUES
 from app.fetchers import fetch_football_matches_async, fetch_combined_tennis_data
-from app.processors import process_tennis_matches, process_football_matches
 from browser import close_browser, get_browser
 import logging
 import asyncio
@@ -36,23 +35,11 @@ def fetch_tennis_matches_in_background(league: str) -> None:
                     cache_key=f"tennis_matches_{league}",
                     fetch_args=(matches_url, rounds_url),
                     logger=logger,
-                    process_func=process_tennis_matches,
                 )
-            except Exception as e:
-                logger.error(f"Error fetching tennis matches: {e}")
             finally:
-                try:
-                    await close_browser(current_app)
-                except Exception as e:
-                    logger.error(f"Error closing browser: {e}")
+                await close_browser(current_app)
 
-        # Use a new event loop to avoid conflicts
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(task_logic())
-        finally:
-            loop.close()
+        asyncio.run(task_logic())
 
     except Exception as e:
         logger.error(f"Error in fetch_tennis_matches_in_background for league {league}: {e}")
@@ -84,7 +71,6 @@ def fetch_football_in_background(league: str) -> None:
                     cache_key=f"matches_{league}",
                     fetch_args=(league_url,),
                     logger=logger,
-                    process_func=process_football_matches,
                 )
             finally:
                 await close_browser(current_app)
