@@ -1,6 +1,5 @@
 from app.player_ratings import PLAYER_RATINGS
 from flask import current_app
-import asyncio
 from app.browser import get_browser
 from flask import current_app
 
@@ -119,24 +118,42 @@ async def fetch_tennis_matches_async(league_url):
                 # Extract player names and categories
                 home_player = await container.locator('a[title]').nth(0).text_content(timeout=5000)
                 away_player = await container.locator('a[title]').nth(1).text_content(timeout=5000)
+                app.logger.debug(f"Extracted home raw: {repr(home_player)}")
 
                 # Extract odds
                 odds = container.locator('div[data-v-34474325] p')
                 home_odd = float(await odds.nth(0).text_content(timeout=5000))
                 away_odd = float(await odds.nth(1).text_content(timeout=5000))
 
+                # category
+                home_category = PLAYER_RATINGS.get(home_player, "Unknown")
+                away_category = PLAYER_RATINGS.get(away_player, "Unknown")
+
+                CATEGORY_POINTS = {
+                    "A": 60,
+                    "B": 100,
+                    "C": 140,
+                    "D": 180,
+                }
+
+                # Get category points for each player
+                home_points = CATEGORY_POINTS.get(home_category, 0)
+                away_points = CATEGORY_POINTS.get(away_category, 0)
+
+                # Calculate win probabilities based on odds
+                home_win_probability = round(100 / home_odd, 2)  # % chance to win
+                away_win_probability = round(100 / away_odd, 2)
+
                 # Calculate expected points
-                expected_home_point = round(100 / home_odd, 2)
-                expected_away_point = round(100 / away_odd, 2)
+                expected_home_point = round(home_win_probability * home_points / 100, 2)
+                expected_away_point = round(away_win_probability * away_points / 100, 2)
 
                 # Construct match data
                 match_data = {
-                    "date": "Unknown",  # Placeholder for now
+                    "date": "Unknown",  # Placeholder
                     "round": "R?",  # Placeholder for round
-                    "home_player": home_player.strip(),
-                    "home_category": PLAYER_RATINGS.get(home_player.strip(), "Unknown"),
-                    "away_player": away_player.strip(),
-                    "away_category": PLAYER_RATINGS.get(away_player.strip(), "Unknown"),
+                    "home_player": home_player,
+                    "away_player": away_player,
                     "odds": {
                         "home": home_odd,
                         "away": away_odd,
@@ -144,7 +161,11 @@ async def fetch_tennis_matches_async(league_url):
                     "expected_points": {
                         "home": expected_home_point,
                         "away": expected_away_point,
-                    }
+                    },
+                    "categories": {
+                        "player1": home_category,
+                        "player2": away_category,
+                    },
                 }
                 all_matches.append(match_data)
             except Exception as e:
