@@ -125,6 +125,13 @@ async def fetch_tennis_matches_async(league_url):
     current_date = None
     seen_matches = set()
 
+    # Points per round
+    ROUND_POINTS = {
+        "Quarterfinals": [240, 400, 560, 720],
+        "Semifinals": [320, 480, 640, 800],
+        "Finals": [400, 560, 720, 800],
+    }
+
     try:
         page = await browser.new_page()
         app.logger.info(f"Navigating to league: {league_url}")
@@ -187,9 +194,15 @@ async def fetch_tennis_matches_async(league_url):
                     # Category and points calculations
                     home_category = PLAYER_RATINGS.get(home_player, "Unknown")
                     away_category = PLAYER_RATINGS.get(away_player, "Unknown")
-                    CATEGORY_POINTS = {"A": 60, "B": 100, "C": 140, "D": 180}
-                    home_points = CATEGORY_POINTS.get(home_category, 0)
-                    away_points = CATEGORY_POINTS.get(away_category, 0)
+                    round_specific_points = ROUND_POINTS.get(round_name, "Unknown")
+                    home_points = round_specific_points[0] if home_category == "A" else \
+                                  round_specific_points[1] if home_category == "B" else \
+                                  round_specific_points[2] if home_category == "C" else \
+                                  round_specific_points[3]
+                    away_points = round_specific_points[0] if away_category == "A" else \
+                                  round_specific_points[1] if away_category == "B" else \
+                                  round_specific_points[2] if away_category == "C" else \
+                                  round_specific_points[3]
                     home_win_probability = round(100 / home_odd, 2)
                     away_win_probability = round(100 / away_odd, 2)
                     expected_home_point = round(home_win_probability * home_points / 100, 2)
