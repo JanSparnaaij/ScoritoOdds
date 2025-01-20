@@ -1,54 +1,58 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_caching import Cache
-from flask_caching import Cache
 from flask_migrate import Migrate
-from dotenv import load_dotenv
-from app.celery_worker import celery
+from redis import Redis, ConnectionError, ConnectionPool
+from app.models import db
+from app.routes import main_bp, auth_bp
 import os
-from redis import Redis
-
-# Load environment variables
-load_dotenv()
+import time
+import logging
 
 # Initialize extensions
-db = SQLAlchemy()
 migrate = Migrate()
-cache = Cache(config={"CACHE_TYPE": "RedisCache"})
+logger = logging.getLogger(__name__)
+
+def initialize_redis():
+    """Initialize Redis with retries and proper SSL configuration."""
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    ssl_cert_path = os.getenv("SSL_CERT_PATH", "/certificate.pem")
+
+    # Parse SSL configuration only for rediss:// URLs
+    ssl_options = {}
+    if redis_url.startswith("rediss://"):
+        ssl_options = {
+            "ssl_cert_reqs": "CERT_OPTIONAL",  # Change to 'CERT_REQUIRED' if stricter validation is needed
+            "ssl_ca_certs": ssl_cert_path,
+        }
+
+    # Use a connection pool for SSL
+    pool = ConnectionPool.from_url(redis_url, **ssl_options)
+
+    for attempt in range(5):
+        try:
+            logger.info(f"Attempting Redis connection, attempt {attempt + 1}...")
+            return Redis(connection_pool=pool)
+        except ConnectionError as e:
+            logger.warning(f"Redis connection failed: {e}")
+            if attempt < 4:
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                logger.error("Exceeded maximum retries for Redis connection.")
+                raise e
 
 def create_app():
     """Application Factory"""
     app = Flask(__name__)
     app.config.from_object("config.Config")
 
-    # Configure Redis with SSL options if REDIS_URL is provided
-    redis_url = os.getenv("REDIS_URL")
-    if redis_url:
-        redis_client = Redis.from_url(redis_url, ssl_cert_reqs=None)
-        app.config["CACHE_TYPE"] = "RedisCache"
-        app.config["CACHE_REDIS_CLIENT"] = redis_client
+    # Initialize Redis
+    app.redis_client = initialize_redis()
 
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
-    cache.init_app(app)
 
-    # Register blueprints after app is fully initialized
-    with app.app_context():
-        from app.routes import main_bp, auth_bp
-        app.register_blueprint(main_bp)
-        app.register_blueprint(auth_bp, url_prefix='/auth')
-    # Register blueprints after app is fully initialized
-    with app.app_context():
-        from app.routes import main_bp, auth_bp
-        app.register_blueprint(main_bp)
-        app.register_blueprint(auth_bp, url_prefix='/auth')
-
-    # Attach Flask app context to Celery
-    celery.conf.update(app.config)
-
-    # Attach Flask app context to Celery
-    celery.conf.update(app.config)
+    # Register blueprints
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp, url_prefix="/auth")
 
     return app
-    

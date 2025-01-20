@@ -6,34 +6,29 @@
 <!-- League Selection Form -->
 <form method="get" action="/tennis">
     <label for="league">Select League:</label>
-    <select id="league" name="league" onchange="this.form.submit()">
+    <select id="league" name="league" onchange="showLoading(); this.form.submit()">
         {% for league, url in leagues.items() %}
         <option value="{{ league }}" {% if league == selected_league %}selected{% endif %}>
             {{ league.replace('_', ' ').title() }}
         </option>
         {% endfor %}
     </select>
-
-    <!-- Category Filter -->
-    <label for="category">Filter by Category:</label>
-    <select id="category" name="category" onchange="this.form.submit()">
-        <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
-        {% for category in categories %}
-        <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>
-            {{ category }}
-        </option>
-        {% endfor %}
-    </select>
 </form>
 
+<!-- Loading Indicator -->
+<div id="loadingMessage" class="{% if loading %}visible{% else %}hidden{% endif %}">
+    Loading data, please wait...
+</div>
+
 <!-- Debugging Info -->
-{% if matches %}
+{% if not loading and matches %}
     <p>{{ matches|length }} matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
-{% else %}
+{% elif not loading %}
     <p>No matches found in {{ selected_league.replace('_', ' ').title() }}.</p>
 {% endif %}
 
 <!-- Table for Match Results -->
+{% if not loading %}
 <table>
     <thead>
         <tr>
@@ -52,37 +47,42 @@
     <tbody>
         {% for match in matches %}
         <tr>
-            <!-- DateTime -->
-            <td>{{ match.date }}</td>
-
-            <!-- Round -->
-            <td>{{ match.round }}</td>
-
-            <!-- Player 1 Name and Category -->
-            <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
-                {{ match.players.player1 }}
+            <td>{{ match.date or "Unknown" }}</td>
+            <td>{{ match.round or "Unknown" }}</td>
+            <td {% if match.home_player and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.home_player or "Unknown" }}
             </td>
-            <td>{{ match.categories.player1 }}</td>
-
-            <!-- Player 2 Name and Category -->
-            <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
-                {{ match.players.player2 }}
+            <td {% if match.categories.player1 and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.categories.player1 or "Unknown" }}
             </td>
-            <td>{{ match.categories.player2 }}</td>
-
-            <!-- Odds -->
-            <td {% if match.odds.player1 < match.odds.player2 %}class="highlight"{% endif %}>
-                {{ match.odds.player1 }}
+            <td {% if match.away_player and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.away_player or "Unknown" }}
             </td>
-            <td {% if match.odds.player2 < match.odds.player1 %}class="highlight"{% endif %}>
-                {{ match.odds.player2 }}
+            <td {% if match.categories.player2 and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.categories.player2 or "Unknown" }}
             </td>
-
-            <!-- Expected Points -->
-            <td>{{ match.expected_points.player1 }}</td>
-            <td>{{ match.expected_points.player2 }}</td>
+            <td {% if match.odds.home and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.odds.home if match.odds and match.odds.home is not none else "N/A" }}
+            </td>
+            <td {% if match.odds.away and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.odds.away if match.odds and match.odds.away is not none else "N/A" }}
+            </td>
+            <td {% if match.expected_points.home and match.odds.home <= match.odds.away %}class="highlight"{% endif %}>
+                {{ match.expected_points.home if match.expected_points and match.expected_points.home is not none else "N/A" }}
+            </td>
+            <td {% if match.expected_points.away and match.odds.away < match.odds.home %}class="highlight"{% endif %}>
+                {{ match.expected_points.away if match.expected_points and match.expected_points.away is not none else "N/A" }}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+{% endif %}
+
+<script>
+    function showLoading() {
+        document.getElementById("loadingMessage").classList.add("visible");
+        document.getElementById("loadingMessage").classList.remove("hidden");
+    }
+</script>
 {% endblock %}
