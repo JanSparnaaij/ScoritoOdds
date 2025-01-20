@@ -10,7 +10,9 @@ services:
       - FLASK_ENV=development
       - SECRET_KEY=dev-secret
       - DATABASE_URL=postgres://u5n1r0okqlgr9m:p504d2830a6b63d716424a472a3f28685b558272982eede6e3d8752e511f3afe8@cd1goc44htrmfn.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d307p6e4nkqktl
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=${REDIS_URL}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
     depends_on:
       - redis
 
@@ -23,7 +25,9 @@ services:
       - FLASK_ENV=development
       - SECRET_KEY=dev-secret
       - DATABASE_URL=postgres://u5n1r0okqlgr9m:p504d2830a6b63d716424a472a3f28685b558272982eede6e3d8752e511f3afe8@cd1goc44htrmfn.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d307p6e4nkqktl
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=${REDIS_URL}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
     depends_on:
       - redis
 
