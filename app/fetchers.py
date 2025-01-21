@@ -123,7 +123,6 @@ def contains_score(name):
     """
     return bool(re.search(r'\d', name))
 
-
 async def fetch_tennis_matches_async(league_url):
     """
     Fetch tennis match details asynchronously from OddsPortal.

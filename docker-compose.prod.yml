@@ -27,6 +27,7 @@ services:
     ports:
       - "80:8000"
 
+
   worker:
     build:
       context: .
