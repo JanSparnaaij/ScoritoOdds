@@ -108,6 +108,21 @@ def determine_round(match_date: str) -> str:
         return "Unknown"
     except ValueError:
         return "Unknown"  # Handle invalid date formats
+    
+import re
+
+def contains_score(name):
+    """
+    Check if the player name contains a score (e.g., "6-4", "7-6").
+    
+    Args:
+        player_name (str): The name to check.
+        
+    Returns:
+        bool: True if the name contains a score, False otherwise.
+    """
+    return bool(re.search(r'\d', name))
+
 
 async def fetch_tennis_matches_async(league_url):
     """
@@ -172,6 +187,11 @@ async def fetch_tennis_matches_async(league_url):
                     # Extract player names
                     home_player = await row.locator('a[title]').nth(0).text_content(timeout=5000)
                     away_player = await row.locator('a[title]').nth(1).text_content(timeout=5000)
+
+                    # Check if names contain scores and skip them if they do
+                    if contains_score(home_player) or contains_score(away_player):
+                        app.logger.debug(f"Skipping match with score in names: {home_player} vs {away_player}")
+                        continue
 
                     # Create a unique identifier for deduplication
                     match_id = f"{home_player.strip()} vs {away_player.strip()}"

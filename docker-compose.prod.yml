@@ -12,12 +12,12 @@ services:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
+      - REDIS_URL=${REDIS_URL}  # Use the Heroku-provided Redis URL
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - result_backend=${CELERY_RESULT_BACKEND}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - PYTHONPATH=./app
     volumes:
-      - ./certificate.pem:/certificate.pem:ro  # Mount the certificate
+      - ./certificate.pem:/certificate.pem:ro
     deploy:
       replicas: 1
       resources:
@@ -26,18 +26,6 @@ services:
           memory: "512M"
     ports:
       - "80:8000"
-    depends_on:
-      - redis
-
-  redis:
-    image: redis:alpine
-    deploy:
-      resources:
-        limits:
-          cpus: "0.2"
-          memory: "256M"
-    volumes:
-      - redis-data:/data
 
   worker:
     build:
@@ -50,21 +38,16 @@ services:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
+      - REDIS_URL=${REDIS_URL}  # Use the Heroku-provided Redis URL
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - result_backend=${CELERY_RESULT_BACKEND}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - SSL_CERT_PATH=/certificate.pem
       - PYTHONPATH=./app
     volumes:
-      - ./certificate.pem:/certificate.pem:ro  # Mount the certificate
+      - ./certificate.pem:/certificate.pem:ro
     deploy:
       replicas: 1
       resources:
         limits:
           cpus: "0.3"
           memory: "256M"
-    depends_on:
-      - redis
-
-volumes:
-  redis-data:
