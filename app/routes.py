@@ -32,6 +32,14 @@ def handle_fetch_tennis(sender, league):
 def home():
     return render_template("home.html")
 
+@main_bp.route("/status/<string:league>")
+def check_status(league):
+    cache_key = f"matches_{league}"
+    matches = current_app.redis_client.get(cache_key)
+    if matches:
+        return {"status": "ready"}, 200
+    return {"status": "loading"}, 202
+
 @main_bp.route("/football")
 async def football():
     if "user_id" not in session:
@@ -47,7 +55,7 @@ async def football():
         loading = False
         current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
     else:
-        flash("Data is being fetched; check back shortly.", "info")
+        flash("Data is being fetched; please wait.", "info")
         fetch_football_signal.send(current_app._get_current_object(), league=selected_league)
         current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
         loading = True
@@ -77,7 +85,7 @@ async def tennis():
         loading = False
         current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
     else:
-        flash("Data is being fetched; check back shortly.", "info")
+        flash("Data is being fetched; please wait.", "info")
         fetch_tennis_signal.send(current_app._get_current_object(), league=selected_league)
         current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
         loading = True
@@ -191,15 +199,19 @@ def test_redis_read():
     except Exception as e:
         return f"Error reading from Redis: {e}", 500
     
-@main_bp.route("/clear-data")
-def clear_test_data():
+@main_bp.route("/clear")
+def clear_all_data():
+    """Clear all data in Redis."""
     try:
-        keys_to_clear = ["matches_eredivisie"]
-        for key in keys_to_clear:
+        keys = current_app.redis_client.keys("*")
+        for key in keys:
             current_app.redis_client.delete(key)
-        return "Test data cleared."
+        return (
+            "All data cleared. "
+            "<a href='/' style='color: blue;'>Go back to Home</a>"
+        )
     except Exception as e:
-        return f"Error clearing test data: {e}", 500
+        return f"Error clearing all Redis data: {e}", 500
 
 @main_bp.route("/clear-tennis-cache")
 def clear_tennis_cache():
