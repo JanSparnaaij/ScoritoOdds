@@ -85,4 +85,27 @@
         document.getElementById("loadingMessage").classList.remove("hidden");
     }
 </script>
+
+<script>
+    const selectedLeague = "{{ selected_league }}";
+    const checkStatus = async () => {
+        try {
+            const response = await fetch(`/status/${selectedLeague}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === "ready") {
+                    location.reload(); // Refresh the page
+                }
+            }
+        } catch (error) {
+            console.error("Error checking status:", error);
+        }
+    };
+
+    // Poll the server every 5 seconds
+    if ("{{ loading }}") {
+        setInterval(checkStatus, 5000);
+    }
+</script>
+
 {% endblock %}

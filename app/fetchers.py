@@ -65,9 +65,9 @@ async def fetch_football_matches_async(league_url):
 
                 # Extract odds
                 odds = container.locator('div[data-v-34474325] p')                   
-                home_odd = await odds.nth(0).text_content(timeout=5000)
-                draw_odd = await odds.nth(1).text_content(timeout=5000)
-                away_odd = await odds.nth(2).text_content(timeout=5000)
+                home_odd = await odds.nth(0).text_content(timeout=1000)
+                draw_odd = await odds.nth(1).text_content(timeout=1000)
+                away_odd = await odds.nth(2).text_content(timeout=1000)
 
                 # Add match details to the list
                 all_matches.append({
@@ -164,7 +164,7 @@ async def fetch_tennis_matches_async(league_url):
                 # Check if the row contains a date
                 if await row.locator('.text-black-main.font-main').count() > 0:
                     # Extract the current date
-                    date_text = (await row.locator('.text-black-main.font-main').first.text_content(timeout=5000)).strip()
+                    date_text = (await row.locator('.text-black-main.font-main').first.text_content(timeout=1000)).strip()
                     app.logger.debug(f"Extracted date text: {date_text}")
 
                     # Remove prefixes like "Today" or "Tomorrow" if present
@@ -184,8 +184,8 @@ async def fetch_tennis_matches_async(league_url):
                 # Check if the row contains match data
                 if await row.locator('a[title]').count() > 0:
                     # Extract player names
-                    home_player = await row.locator('a[title]').nth(0).text_content(timeout=5000)
-                    away_player = await row.locator('a[title]').nth(1).text_content(timeout=5000)
+                    home_player = await row.locator('a[title]').nth(0).text_content(timeout=1000)
+                    away_player = await row.locator('a[title]').nth(1).text_content(timeout=1000)
 
                     # Check if names contain scores and skip them if they do
                     if contains_score(home_player) or contains_score(away_player):
@@ -201,8 +201,8 @@ async def fetch_tennis_matches_async(league_url):
 
                     # Extract odds
                     odds = row.locator('div[data-v-34474325] p')
-                    home_odd = float(await odds.nth(0).text_content(timeout=5000))
-                    away_odd = float(await odds.nth(1).text_content(timeout=5000))
+                    home_odd = float(await odds.nth(0).text_content(timeout=1000))
+                    away_odd = float(await odds.nth(1).text_content(timeout=1000))
 
                     # Determine the round based on the current date
                     if current_date and current_date != "Unknown":
