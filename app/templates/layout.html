@@ -17,7 +17,7 @@
             <li><a href="/" {% if request.path == '/' %}class="active"{% endif %}>Home</a></li>
             <li><a href="/football" {% if request.path == '/football' %}class="active"{% endif %}>Football</a></li>
             <li><a href="/tennis" {% if request.path == '/tennis' %}class="active"{% endif %}>Tennis</a></li>
-            <li><a href="/clear" {% if request.path == '/clear' %}class="active"{% endif %}>Clear data</a></li>
+            <li><a href="/clear" {% if request.path == '/clear' %}class="active"{% endif %}>Clear <data value=""></data></a></li>
             {% if session.get('user_id') %}
                 <li><a href="/auth/logout">Logout</a></li>
             {% else %}
