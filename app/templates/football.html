@@ -32,6 +32,7 @@
 <table>
     <thead>
         <tr>
+            <th>DateTime</th>
             <th>Home Team</th>
             <th>Away Team</th>
             <th>Home Odds</th>
@@ -42,6 +43,7 @@
     <tbody>
         {% for match in matches %}
         <tr>
+            <td>{{ match.date or "Unknown" }}</td>
             <td {% if match.odds.home | float <= match.odds.draw | float and match.odds.home | float <= match.odds.away | float %}class="highlight"{% endif %}>
                 {{ match.home_team }}
             </td>
