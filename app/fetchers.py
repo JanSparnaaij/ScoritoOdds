@@ -13,77 +13,98 @@ async def fetch_football_matches_async(league_url):
         league_url (str): URL of the league page on OddsPortal.
 
     Returns:
-        list: List of dictionaries containing match details (team names, odds).
+        list: List of dictionaries containing match details (team names, odds, date).
     """
     app = current_app._get_current_object()
     browser = await get_browser(app)
+    all_matches = []
+    current_date = None
+    seen_matches = set()
+
     try:
         page = await browser.new_page()
-
         app.logger.info(f"Navigating to league: {league_url}")
         await page.goto(league_url, timeout=30000)
         app.logger.info("League page loaded successfully!")
 
-        # Validate that the correct page is loaded
-        if "football" not in page.url:
-            app.logger.warning(f"Failed to navigate to the league. Redirected to: {page.url}")
-            return []
+        # Wait for the match container rows
+        await page.wait_for_selector('div[data-v-b8d70024]', timeout=30000)
+        rows = page.locator('div[data-v-b8d70024]')
+        row_count = await rows.count()
+        app.logger.info(f"Found {row_count} rows.")
 
-        # Wait for the parent container of matches
-        await page.wait_for_selector('div[data-v-b8d70024] > div.eventRow', timeout=30000)
-
-        # Locate all match containers
-        match_containers = page.locator('div[data-v-b8d70024] > div.eventRow')
-        match_count = await match_containers.count()
-        app.logger.info(f"Found {match_count} match containers.")
-
-        all_matches = []
-        processed_ids = set()  # To track unique match rows
-
-        for i in range(match_count):
+        for i in range(row_count):
             try:
-                # Scope to the current match container
-                container = match_containers.nth(i)
-                row_id = await container.get_attribute("id")
+                row = rows.nth(i)
 
-                # Skip duplicates
-                if row_id in processed_ids:
-                    app.logger.info(f"Skipping duplicate row with ID {row_id}")
-                    continue
-                processed_ids.add(row_id)
+                # Check if the row contains a date
+                if await row.locator('.text-black-main.font-main').count() > 0:
+                    date_text = (await row.locator('.text-black-main.font-main').first.text_content(timeout=1000)).strip()
+                    app.logger.debug(f"Extracted date text: {date_text}")
 
-                # Extract team names
-                home_team_locator = container.locator('a[title]').nth(0)
-                away_team_locator = container.locator('a[title]').nth(1)
+                    # Handle "Today," "Tomorrow," or explicit dates
+                    if "Today" in date_text:
+                        current_date = datetime.now().strftime("%d-%m-%Y")
+                    elif "Tomorrow" in date_text:
+                        current_date = (datetime.now() + timedelta(days=1)).strftime("%d-%m-%Y")
+                    else:
+                        try:
+                            # Parse full dates or add the current year dynamically
+                            cleaned_date_text = date_text.split(",")[-1].strip()
+                            if len(cleaned_date_text.split()) == 2:  # e.g., "28 Jan"
+                                current_year = datetime.now().year
+                                cleaned_date_text += f" {current_year}"
+                            current_date = datetime.strptime(cleaned_date_text, "%d %b %Y").strftime("%d-%m-%Y")
+                        except ValueError as e:
+                            app.logger.error(f"Error parsing date: {date_text}, {e}")
+                            current_date = "Unknown"
 
-                if not await home_team_locator.is_visible() or not await away_team_locator.is_visible():
-                    print(f"Skipping incomplete match data for row {row_id}")
-                    continue
+                    app.logger.debug(f"Set current_date to: {current_date}")
+                    continue  # Move to the next row
 
-                home_team = await home_team_locator.text_content()
-                away_team = await away_team_locator.text_content()
+                # Check if the row contains match data
+                if await row.locator('a[title]').count() > 0:
+                    home_team = await row.locator('a[title]').nth(0).text_content(timeout=1000)
+                    away_team = await row.locator('a[title]').nth(1).text_content(timeout=1000)
 
-                # Extract odds
-                odds = container.locator('div[data-v-34474325] p')                   
-                home_odd = await odds.nth(0).text_content(timeout=1000)
-                draw_odd = await odds.nth(1).text_content(timeout=1000)
-                away_odd = await odds.nth(2).text_content(timeout=1000)
+                    # Create a unique match identifier
+                    match_id = f"{home_team.strip()} vs {away_team.strip()}"
+                    if match_id in seen_matches:
+                        app.logger.debug(f"Duplicate match found: {match_id}")
+                        continue
+                    seen_matches.add(match_id)
 
-                # Add match details to the list
-                all_matches.append({
-                    "home_team": home_team.strip(),
-                    "away_team": away_team.strip(),
-                    "odds": {
-                        "home": home_odd.strip(),
-                        "draw": draw_odd.strip(),
-                        "away": away_odd.strip(),
+                    # Extract odds
+                    odds = row.locator('div[data-v-34474325] p')
+                    if await odds.count() < 3:
+                        app.logger.warning(f"Skipping row at index {i}: Missing odds.")
+                        continue
+
+                    home_odd = await odds.nth(0).text_content(timeout=1000)
+                    draw_odd = await odds.nth(1).text_content(timeout=1000)
+                    away_odd = await odds.nth(2).text_content(timeout=1000)
+
+                    # Add match details to the list
+                    match_data = {
+                        "date": current_date or "Unknown",
+                        "home_team": home_team.strip(),
+                        "away_team": away_team.strip(),
+                        "odds": {
+                            "home": home_odd.strip(),
+                            "draw": draw_odd.strip(),
+                            "away": away_odd.strip(),
+                        },
                     }
-                })
+                    all_matches.append(match_data)
+                    app.logger.debug(f"Added match: {home_team.strip()} vs {away_team.strip()} on {current_date}")
+
             except Exception as e:
-                app.logger.error(f"Error processing match {i + 1}: {e}")
+                app.logger.error(f"Error processing row at index {i}: {e}")
                 continue
 
+        app.logger.info(f"Extracted {len(all_matches)} matches.")
         return all_matches
+
     except Exception as e:
         app.logger.error(f"Error fetching matches: {e}")
         return []
@@ -131,7 +152,7 @@ async def fetch_tennis_matches_async(league_url):
         league_url (str): The URL of the tennis league page.
 
     Returns:
-        list: List of dictionaries containing match details and odds.
+        list: List of dictionaries containing match details, odds, and date.
     """
     app = current_app._get_current_object()
     browser = await get_browser(app)  # Use the shared browser instance
