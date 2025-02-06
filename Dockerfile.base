@@ -1,0 +1,30 @@
+# Use a smaller base image
+FROM python:3.10-slim AS base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    FLASK_ENV=production \
+    FLASK_APP=run:app \
+    PYTHONPATH=/app \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
+
+# Install core system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libpq-dev \
+    gcc \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy and install dependencies first (leveraging caching)
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Playwright once (shared across web & worker)
+RUN pip install playwright && playwright install --with-deps
+
+# Copy the rest of the application files
+COPY . /app

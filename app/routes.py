@@ -42,9 +42,9 @@ def check_status(league):
 
 @main_bp.route("/football")
 async def football():
-    if "user_id" not in session:
-        flash("Please log in to access this page.", "warning")
-        return redirect(url_for("auth.login"))
+    # if "user_id" not in session:
+    #     flash("Please log in to access this page.", "warning")
+    #     return redirect(url_for("auth.login"))
 
     selected_league = request.args.get("league", "eredivisie")
     cache_key = f"matches_{selected_league}"
@@ -64,9 +64,9 @@ async def football():
 
 @main_bp.route("/tennis")
 async def tennis():
-    if "user_id" not in session:
-        flash("Please log in to access this page.", "warning")
-        return redirect(url_for("auth.login"))
+    # if "user_id" not in session:
+    #     flash("Please log in to access this page.", "warning")
+    #     return redirect(url_for("auth.login"))
 
     selected_league = request.args.get("league", "atp_australian_open")
     cache_key = f"tennis_matches_{selected_league}"
@@ -95,30 +95,31 @@ async def tennis():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    from flask import current_app
-    current_app.logger.info(f"App context: {current_app}")
-    current_app.logger.info(f"DB instance type: {type(db)}")
+    flash("Login is temporarily disabled.", "warning")
+    return redirect(url_for("main.home"))
+    # from flask import current_app
+    # current_app.logger.info(f"App context: {current_app}")
+    # current_app.logger.info(f"DB instance type: {type(db)}")
 
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+    # if request.method == "POST":
+    #     username = request.form["username"]
+    #     password = request.form["password"]
        
-        try:
-            user = User.query.filter_by(username=username).first()
-        except Exception as e:
-            current_app.logger.error(f"Error querying the database: {e}")
-            flash("An error occurred while processing your request.", "danger")
-            return render_template("login.html")
+    #     try:
+    #         user = User.query.filter_by(username=username).first()
+    #     except Exception as e:
+    #         current_app.logger.error(f"Error querying the database: {e}")
+    #         flash("An error occurred while processing your request.", "danger")
+    #         return render_template("login.html")
 
-        if user and check_password_hash(user.password, password):
-            session.clear()
-            session["user_id"] = user.id
-            flash("Logged in successfully!", "success")
-            return redirect(url_for("main.home"))
-        else:
-            flash("Invalid credentials. Please try again.", "danger")
-
-    return render_template("login.html")
+    #     if user and check_password_hash(user.password, password):
+    #         session.clear()
+    #         session["user_id"] = user.id
+    #         flash("Logged in successfully!", "success")
+    #         return redirect(url_for("main.home"))
+    #     else:
+    #         flash("Invalid credentials. Please try again.", "danger")
+   # return render_template("login.html")
 
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
