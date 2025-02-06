@@ -1,59 +1,32 @@
-# Base Python image
+# Use a smaller Python image
 FROM python:3.10-slim
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    FLASK_ENV=production \
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers \
-    FLASK_APP=run:app \
-    PYTHONPATH=./app
+ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    gstreamer1.0-libav \
-    gstreamer1.0-plugins-bad \
-    gstreamer1.0-plugins-base \
-    gstreamer1.0-plugins-good \
-    gstreamer1.0-plugins-ugly \
-    gstreamer1.0-tools \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libatspi2.0-0 \
-    libenchant-2-2 \
     libpq-dev \
     gcc \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .  
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Install Playwright and its dependencies
-RUN pip install playwright \
-    && PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
-
-# Set working directory and copy application files
+# Set working directory
 WORKDIR /app
+
+# Copy requirements.txt and install dependencies first (to leverage Docker caching)
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r /app/requirements.txt
+
+# Copy the rest of the application files
 COPY . /app
 
-# Copy the SSL certificate
-COPY certificate.pem /certificate.pem
-
-# Expose the application port
-EXPOSE 8000
-
-# Define an entrypoint script to handle role-specific commands
+# Copy and set permissions for entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-# Label for Heroku web process
-LABEL "heroku.process.web"="docker-entrypoint.sh web"
-
-# Use the entrypoint script
+# Set entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
-# Default argument for running the web service
 CMD ["web"]
-

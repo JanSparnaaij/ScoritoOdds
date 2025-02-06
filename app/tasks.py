@@ -2,10 +2,16 @@ from app.celery_worker import celery
 from app.utils import fetch_matches_and_cache, log_task_status
 from app.constants import TENNIS_LEAGUES, LEAGUES
 from app.fetchers import fetch_football_matches_async, fetch_combined_tennis_data
-from browser import close_browser, get_browser
+from app.browser import close_browser, get_browser
 import logging
 import asyncio
+import sys
+import os
 
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))  # Ensure current dir is in path
+sys.path.append("/app/app")  # Add /app/app explicitly
+
+from browser import close_browser, get_browser
 logger = logging.getLogger(__name__)
 
 @celery.task(name="app.tasks.fetch_tennis_matches_in_background")

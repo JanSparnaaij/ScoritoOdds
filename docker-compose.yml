@@ -3,13 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
-    command: ["web"]
     ports:
       - "8000:8000"
     environment:
-      - FLASK_ENV=development
-      - SECRET_KEY=dev-secret
-      - DATABASE_URL=${DATABASE_URL}
+      - FLASK_ENV=production
+      - SECRET_KEY=super-secret
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
@@ -20,11 +18,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
-    command: ["worker"]
     environment:
-      - FLASK_ENV=development
-      - SECRET_KEY=dev-secret
-      - DATABASE_URL=${DATABASE_URL}
+      - FLASK_ENV=production
+      - SECRET_KEY=super-secret
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
