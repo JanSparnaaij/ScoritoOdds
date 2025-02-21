@@ -3,25 +3,65 @@ FROM python:3.10-slim
 # Set the working directory
 WORKDIR /app
 
-# Copy requirements and install dependencies
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# Install system dependencies including Playwright requirements
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    wget \
+    # Playwright dependencies
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set the Playwright browser installation path
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers
+# Copy requirements and install Python packages
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Ensure the directory exists and install Playwright & Chromium
-RUN mkdir -p /ms-playwright-browsers \
-    && pip install playwright \
-    && playwright install --with-deps chromium  # Install Chromium only
+# Set up Playwright with system-wide installation
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN pip install playwright && \
+    mkdir -p /ms-playwright && \
+    playwright install chromium && \
+    playwright install-deps chromium && \
+    chmod -R 777 /ms-playwright && \
+    # Verify installation
+    ls -la /ms-playwright && \
+    find /ms-playwright -name chrome
 
-# Copy the application files
-COPY . /app
+# Copy the rest of the application
+COPY . .
 
-# Ensure entrypoint script is executable
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Make the entrypoint script executable
+RUN chmod +x docker-entrypoint.sh
 
-# Start the worker
-CMD ["celery", "-A", "app.tasks", "worker", "--loglevel=info"]
+# Create non-root user for Celery
+RUN useradd -m celeryuser && \
+    chown -R celeryuser:celeryuser /app /ms-playwright && \
+    # Give celeryuser access to necessary directories
+    chmod -R 755 /app && \
+    chmod -R 777 /ms-playwright
+
+# Switch to non-root user
+USER celeryuser
+
+# Remove the browser check from entrypoint since we've already installed it
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+# Create directories for debugging
+RUN mkdir -p /app/debug && \
+    chmod 777 /app/debug
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["worker"]

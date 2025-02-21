@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from blinker import signal
-from app.constants import LEAGUES, TENNIS_LEAGUES
+from app.constants import LEAGUES, TENNIS_LEAGUES, CYCLING_LEAGUES
 import re
 import json
 from app.models import db, User  # Lazy import of db
+from app.fetchers import fetch_all_cycling_data, process_cycling_data, fetch_football_matches_async
+from flask import current_app
 
 # Blueprints
 main_bp = Blueprint("main", __name__)
@@ -13,6 +15,7 @@ auth_bp = Blueprint("auth", __name__)
 # Signal definitions
 fetch_tennis_signal = signal("fetch-tennis")
 fetch_football_signal = signal("fetch-football")
+fetch_cycling_signal = signal("fetch-cycling")
 
 # Signal Handlers
 @fetch_football_signal.connect
@@ -27,6 +30,12 @@ def handle_fetch_tennis(sender, league):
     current_app.logger.info(f"Signal received to fetch tennis data for league: {league}")
     fetch_tennis_matches_in_background.delay(league)
 
+@fetch_cycling_signal.connect
+def handle_fetch_cycling(sender, league):
+    from app.tasks import fetch_cycling_in_background
+    current_app.logger.info(f"Signal received to fetch cycling data for league: {league}")
+    fetch_cycling_in_background.delay(league)
+
 # Routes
 @main_bp.route("/")
 def home():
@@ -34,18 +43,21 @@ def home():
 
 @main_bp.route("/status/<string:league>")
 def check_status(league):
+    """Check if matches are available for the given league."""
     cache_key = f"matches_{league}"
     matches = current_app.redis_client.get(cache_key)
+    
+    # Add more detailed logging
     if matches:
+        matches_data = json.loads(matches.decode("utf-8"))
+        current_app.logger.info(f"Status check for {league}: ready with {len(matches_data)} matches")
         return {"status": "ready"}, 200
-    return {"status": "loading"}, 202
+    else:
+        current_app.logger.info(f"Status check for {league}: still loading")
+        return {"status": "loading"}, 202
 
 @main_bp.route("/football")
-async def football():
-    # if "user_id" not in session:
-    #     flash("Please log in to access this page.", "warning")
-    #     return redirect(url_for("auth.login"))
-
+def football():
     selected_league = request.args.get("league", "eredivisie")
     cache_key = f"matches_{selected_league}"
     matches = current_app.redis_client.get(cache_key)
@@ -55,12 +67,20 @@ async def football():
         loading = False
         current_app.logger.info(f"Cache hit for league '{selected_league}': {len(matches)} matches retrieved.")
     else:
-        flash("Data is being fetched; please wait.", "info")
+        # Use Celery worker to fetch data
         fetch_football_signal.send(current_app._get_current_object(), league=selected_league)
         current_app.logger.info(f"Cache miss for league '{selected_league}'. Signal sent to fetch matches.")
+        matches = []
         loading = True
+        flash("Data is being fetched; please wait.", "info")
 
-    return render_template("football.html", matches=matches or [], leagues=LEAGUES, selected_league=selected_league, loading=loading)
+    return render_template(
+        "football.html", 
+        matches=matches or [], 
+        leagues=LEAGUES, 
+        selected_league=selected_league, 
+        loading=loading
+    )
 
 @main_bp.route("/tennis")
 async def tennis():
@@ -92,6 +112,43 @@ async def tennis():
         matches = []
 
     return render_template("tennis.html", matches=matches, leagues=TENNIS_LEAGUES, selected_league=selected_league, loading=loading)
+
+@main_bp.route("/cycling")
+async def cycling():
+    from app.constants import CYCLING_LEAGUES
+    from app.fetchers import fetch_all_cycling_data, process_cycling_data
+    
+    cache_key = "cycling_startlists"
+    cached_data = current_app.redis_client.get(cache_key)
+    
+    if cached_data:
+        try:
+            data = json.loads(cached_data.decode("utf-8"))
+            loading = False
+            current_app.logger.info("Using cached cycling data")
+        except json.JSONDecodeError:
+            current_app.logger.error("Error decoding cached cycling data")
+            data = {'teams': [], 'riders': {}, 'races': []}
+            loading = True
+    else:
+        try:
+            current_app.logger.info("Fetching fresh cycling data")
+            raw_data = await fetch_all_cycling_data(CYCLING_LEAGUES)
+            data = process_cycling_data(raw_data)
+            # Cache for 1 hour
+            current_app.redis_client.set(cache_key, json.dumps(data), ex=3600)
+            loading = False
+        except Exception as e:
+            current_app.logger.error(f"Error fetching cycling data: {e}")
+            data = {'teams': [], 'riders': {}, 'races': []}
+            loading = True
+
+    return render_template(
+        "cycling.html",
+        loading=loading,
+        data=data,
+        races=CYCLING_LEAGUES
+    )
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -235,3 +292,19 @@ def test_celery():
     from app.tasks import fetch_tennis_matches_in_background
     task = fetch_tennis_matches_in_background.delay("atp_australian_open")
     return f"Task {task.id} sent to Celery"
+
+@main_bp.route("/clear-cycling-cache")
+def clear_cycling_cache():
+    """Clear cycling cache for debugging."""
+    key = "cycling_startlists"
+    current_app.redis_client.delete(key)
+    return "Cycling cache cleared."
+
+@main_bp.route("/debug-cycling-data")
+def debug_cycling_data():
+    key = "cycling_startlists"  # Changed from cycling_matches_tour_de_france
+    value = current_app.redis_client.get(key)
+    if value:
+        matches = json.loads(value.decode("utf-8"))
+        return matches  # This will return the data directly as JSON
+    return "No data found for the specified key."

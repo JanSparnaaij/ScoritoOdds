@@ -37,3 +37,19 @@ AUSTRALIAN_OPEN_SCHEDULE = {
     "Semifinals": {"start": "2025-01-23", "end": "2025-01-24"},
     "Finals": {"start": "2025-01-25", "end": "2025-01-26"},
 }
+
+CYCLING_LEAGUES = {
+    # Opening Weekend
+    "omloop_het_nieuwsblad": {
+        "name": "Omloop Het Nieuwsblad",
+        "url": "https://www.procyclingstats.com/race/omloop-het-nieuwsblad/2025/startlist"
+    },
+    "kuurne_brussel_kuurne": {
+        "name": "Kuurne-Brussel-Kuurne",
+        "url": "https://www.procyclingstats.com/race/kuurne-brussel-kuurne/2025/startlist"
+    },
+    "strade-bianche": {
+        "name": "Strade Bianche",
+        "url": "https://www.procyclingstats.com/race/strade-bianche/2025/startlist/startlist"
+    }
+}

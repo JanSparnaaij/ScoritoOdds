@@ -5,12 +5,15 @@ services:
       dockerfile: Dockerfile.web
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     environment:
+      - FLASK_APP=app
       - FLASK_ENV=production
-      - SECRET_KEY=super-secret
-      - REDIS_URL=${REDIS_URL}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - FLASK_DEBUG=0
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
 
@@ -18,12 +21,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
+    volumes:
+      - .:/app
     environment:
+      - FLASK_APP=app
       - FLASK_ENV=production
-      - SECRET_KEY=super-secret
-      - REDIS_URL=${REDIS_URL}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
 

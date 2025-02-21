@@ -18,12 +18,6 @@ if ! python -c "import redis" 2>/dev/null; then
     pip install --no-cache-dir redis
 fi
 
-# ✅ Ensure Playwright is installed
-if ! python -c "import playwright" 2>/dev/null; then
-    echo "Playwright module not found. Installing..."
-    pip install --no-cache-dir playwright
-fi
-
 # ✅ Set Redis URL properly
 REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
 echo "Using Redis URL: $REDIS_URL"
@@ -54,25 +48,20 @@ do
 done
 echo "✅ Redis is ready!"
 
-# ✅ Playwright Setup for Celery Worker
-if [ "$1" = "worker" ]; then
-    echo "Ensuring Playwright browsers are installed for the worker..."
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright-browsers playwright install --with-deps
-fi
-
-# ✅ Drop Root Privileges for Celery (Security Best Practice)
-if [ "$1" = "worker" ] && [ "$(id -u)" = "0" ]; then
-    echo "⚠️ WARNING: Running Celery as root is not recommended. Switching to a non-root user..."
-    useradd -m celeryuser
-    chown -R celeryuser:celeryuser /app /ms-playwright-browsers
-    exec su celeryuser -c "celery -A app.celery_worker.celery worker --loglevel=info --concurrency=1"
-fi
-
 # ✅ Start the requested service
 case "$1" in
     web)
-        echo "🚀 Starting Flask web service..."
-        exec flask run --host=0.0.0.0 --port=${PORT:-8000}
+        echo "🚀 Starting web service..."
+        if [ "$FLASK_ENV" = "development" ]; then
+            exec flask run --host=0.0.0.0 --port=${PORT:-8000}
+        else
+            exec gunicorn --bind 0.0.0.0:${PORT:-8000} \
+                         --workers ${WORKERS:-4} \
+                         --timeout 120 \
+                         --access-logfile - \
+                         --error-logfile - \
+                         "app:create_app()"
+        fi
         ;;
     worker)
         echo "🚀 Starting Celery worker..."
@@ -83,7 +72,7 @@ case "$1" in
         exec bash
         ;;
     *)
-        echo "Executing custom command: $@"
-        exec "$@"
+        echo "Unknown command: $1"
+        exit 1
         ;;
 esac
