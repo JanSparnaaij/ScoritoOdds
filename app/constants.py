@@ -10,6 +10,7 @@ LEAGUES = {
     "ligue_1": "https://www.oddsportal.com/football/france/ligue-1/",
     "champions_league": "https://www.oddsportal.com/football/europe/champions-league/",
     "europa_league": "https://www.oddsportal.com/football/europe/europa-league/",
+    "conference_league": "https://www.oddsportal.com/football/europe/conference-league/",
 }
 
 # Tennis
@@ -21,10 +22,6 @@ TENNIS_LEAGUES = {
      "wta_australian_open": {
         "matches": "https://www.oddsportal.com/tennis/australia/wta-australian-open/",
         "rounds": "https://www.oddsportal.com/tennis/australia/wta-australian-open/standings/",
-    },
-    "Brisbane challenger": {
-        "matches": "https://www.oddsportal.com/tennis/australia/brisbane-challenger-men/",
-        "rounds": "https://www.oddsportal.com/tennis/australia/brisbane-challenger-men/standings/",
     }
 }
 
