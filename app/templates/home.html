@@ -1,19 +1,21 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
 
 {% block content %}
-<h1>Welcome to the Scorito Portal</h1>
+<div class="container">
+    <h1>Welcome to the Scorito Portal</h1>
 
-<p>Select a sport to explore:</p>
+    <p>Select a sport to explore:</p>
 
-<!-- Buttons for Sports -->
-<div class="button-container">
-    <form action="/football" method="get" style="display:inline;">
-        <button type="submit" class="btn">Football</button>
-    </form>
+    <!-- Buttons for Sports -->
+    <div class="button-container mb-4">
+        <form action="/football" method="get" style="display:inline;">
+            <button type="submit" class="btn">Football</button>
+        </form>
 
-    <form action="/tennis" method="get" style="display:inline;">
-        <button type="submit" class="btn">Tennis</button>
-    </form>
+        <form action="/tennis" method="get" style="display:inline;">
+            <button type="submit" class="btn">Tennis</button>
+        </form>
+    </div>
 </div>
 
 <style>
@@ -30,6 +32,7 @@
         border-radius: 5px;
         cursor: pointer;
         margin: 10px;
+        transition: background-color 0.3s ease;
     }
     .btn:hover {
         background-color: #0056b3;

@@ -41,7 +41,7 @@
                             (match.draw_odds|float, 'Draw'),
                             (match.away_odds|float, 'Away Win')
                         ] %}
-                        {% set best_odds = odds|sort(reverse=true)|first %}
+                        {% set best_odds = odds|sort|first %}
                         <tr>
                             <td>{{ match.home_team }}</td>
                             <td>{{ match.away_team }}</td>

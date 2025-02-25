@@ -51,5 +51,53 @@ CYCLING_LEAGUES = {
     "strade-bianche": {
         "name": "Strade Bianche",
         "url": "https://www.procyclingstats.com/race/strade-bianche/2025/startlist/startlist"
+    },
+    "milaan_san_remo": {
+        "name": "Milaan-San Remo",
+        "url": "https://www.procyclingstats.com/race/milano-sanremo/2025/startlist"
+    },
+    "brugge_de_panne": {
+        "name": "Brugge-De Panne",
+        "url": "https://www.procyclingstats.com/race/classic-brugge-de-panne/2025/startlist"
+    },
+    "e3_saxo_bank_classic": {
+        "name": "E3 Saxo Bank Classic",
+        "url": "https://www.procyclingstats.com/race/e3-harelbeke/2025/startlist"
+    },
+    "gent_wevelgem": {
+        "name": "Gent-Wevelgem",
+        "url": "https://www.procyclingstats.com/race/gent-wevelgem/2025/startlist"
+    },
+    "dwars_door_vlaanderen": {
+        "name": "Dwars Door Vlaanderen",
+        "url": "https://www.procyclingstats.com/race/dwars-door-vlaanderen/2025/startlist"
+    },
+    "ronde_van_vlaanderen": {
+        "name": "Ronde van Vlaanderen",
+        "url": "https://www.procyclingstats.com/race/ronde-van-vlaanderen/2025/startlist"
+    },
+    "scheldeprijs": {
+        "name": "Scheldeprijs",
+        "url": "https://www.procyclingstats.com/race/scheldeprijs/2025/startlist"
+    },
+    "parijs_roubaix": {
+        "name": "Parijs-Roubaix",
+        "url": "https://www.procyclingstats.com/race/paris-roubaix/2025/startlist"
+    },
+    "brabantse_pijl": {
+        "name": "Brabantse Pijl",
+        "url": "https://www.procyclingstats.com/race/brabantse-pijl/2025/startlist"
+    },
+    "amstel_gold_race": {
+        "name": "Amstel Gold Race",
+        "url": "https://www.procyclingstats.com/race/amstel-gold-race/2025/startlist"
+    },
+    "waalse_pijl": {
+        "name": "Waalse Pijl",
+        "url": "https://www.procyclingstats.com/race/la-fleche-wallone/2025/startlist"
+    },
+    "luik_bastenaken_luik": {
+        "name": "Luik-Bastenaken-Luik",
+        "url": "https://www.procyclingstats.com/race/luik-bastenaken-luik/2025/startlist"
     }
 }

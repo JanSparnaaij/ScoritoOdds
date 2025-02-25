@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Scorito Klassiekerspel</h1>
+        <h1>Spring Classics Startlists</h1>
         <a href="{{ url_for('main.clear_cycling_cache') }}" class="btn btn-primary">
             Refresh Data
         </a>
@@ -18,12 +18,26 @@
     </div>
     {% else %}
     
+    <!-- Sorting Dropdown -->
+    <div class="mb-4">
+        <label for="sortOptions" class="mr-2">Sort by:</label>
+        <select id="sortOptions" class="form-control" onchange="sortTable(this.value)">
+            <option value="team">Team</option>
+            <option value="rider">Rider</option>
+            <option value="total">Total Spring Classics</option>
+            {% for race_id, race_info in races.items() %}
+            <option value="{{ race_id }}">{{ race_info.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
     <div class="table-responsive">
-        <table class="table table-sm table-bordered">
+        <table class="table table-sm table-bordered" id="cyclingTable">
             <thead>
                 <tr>
                     <th>Team</th>
                     <th>Rider</th>
+                    <th>Total Spring Classics</th>
                     {% for race_id, race_info in races.items() %}
                     <th>{{ race_info.name }}</th>
                     {% endfor %}
@@ -31,26 +45,22 @@
             </thead>
             <tbody>
                 {% for team in data.teams %}
-                {% set team_riders = [] %}
-                {% for rider, info in data.riders.items() if info.team == team %}
-                    {% set _ = team_riders.append(rider) %}
-                {% endfor %}
-                
-                {% for rider in team_riders|sort %}
-                <tr>
-                    {% if loop.first %}
-                    <td rowspan="{{ team_riders|length }}">{{ team }}</td>
-                    {% endif %}
-                    <td>{{ rider }}</td>
-                    {% for race_id in data.races %}
-                    <td class="text-center">
-                        {% if race_id in data.riders[rider].races %}
-                        <i class="fas fa-check text-success"></i>
-                        {% endif %}
-                    </td>
+                    {% for rider_id, rider in data.riders.items() if rider.team == team %}
+                    <tr>
+                        <td>{{ team }}</td>
+                        <td>{{ rider_id }}</td>
+                        <td class="text-center">{{ rider.races | length }}</td>
+                        {% for race_id in races.keys() %}
+                        <td class="text-center">
+                            {% if race_id in rider.races %}
+                            <i class="fas fa-check text-success"></i>
+                            {% else %}
+                            <!-- No output for non-participation -->
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
-                </tr>
-                {% endfor %}
                 {% endfor %}
             </tbody>
         </table>
@@ -58,21 +68,82 @@
     {% endif %}
 </div>
 
+<script>
+    function sortTable(criteria) {
+        const table = document.getElementById("cyclingTable");
+        const tbody = table.getElementsByTagName("tbody")[0];
+        const rows = Array.from(tbody.rows);
+
+        // Determine the index of the column to sort by
+        let columnIndex;
+        if (criteria === 'total') {
+            columnIndex = 2; // Total Spring Classics
+        } else if (criteria === 'team') {
+            columnIndex = 0; // Team
+        } else if (criteria === 'rider') {
+            columnIndex = 1; // Rider
+        } else {
+            // Assuming race_id corresponds to the index of the race columns
+            const raceIds = Array.from(table.getElementsByTagName("th")).slice(3).map(th => th.innerText);
+            columnIndex = raceIds.indexOf(criteria) + 3; // Adjust for race columns
+        }
+
+        // Sort rows based on the selected column
+        rows.sort((a, b) => {
+            const aText = a.cells[columnIndex].innerText;
+            const bText = b.cells[columnIndex].innerText;
+
+            // Handle sorting for race participation
+            if (criteria !== 'total' && criteria !== 'team' && criteria !== 'rider') {
+                const aParticipates = a.cells[columnIndex].innerText.includes('✔'); // Check if rider participates
+                const bParticipates = b.cells[columnIndex].innerText.includes('✔');
+
+                // Sort by participation first
+                if (aParticipates && !bParticipates) return -1; // a comes first
+                if (!aParticipates && bParticipates) return 1;  // b comes first
+            }
+
+            // Handle numeric sorting for Total Spring Classics
+            if (columnIndex === 2) {
+                return parseInt(bText) - parseInt(aText); // Sort in descending order
+            }
+
+            // Default string sorting
+            return aText.localeCompare(bText);
+        });
+
+        // Re-append sorted rows to the tbody
+        rows.forEach(row => tbody.appendChild(row));
+    }
+</script>
+
 <style>
+    .table {
+        width: 100%;  /* Set table to full width */
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
     .table td, .table th {
         padding: 0.5rem;
         font-size: 0.9rem;
     }
+
     .table td.text-center {
         vertical-align: middle;
     }
-</style>
 
-{% if loading %}
-<script>
-    setTimeout(function() {
-        window.location.reload();
-    }, 5000);
-</script>
-{% endif %}
-{% endblock %} 
+    .table-responsive {
+        overflow-x: auto;  /* Allow horizontal scrolling if necessary */
+        width: 100%;  /* Ensure the container takes full width */
+    }
+
+    /* Adjust container margins */
+    .container-fluid {
+        padding-left: 15px;  /* Reduce left padding */
+        padding-right: 15px; /* Reduce right padding */
+    }
+</style>
+{% endblock %}

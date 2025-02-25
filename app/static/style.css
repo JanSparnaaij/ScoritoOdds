@@ -10,9 +10,17 @@ h1 {
 
 table {
     width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
+    table-layout: auto; /* or fixed if needed */
 }
+.table td, .table th {
+    padding: 0.7rem; /* Increase padding for better readability */
+    font-size: 1rem; /* Slightly larger text */
+    white-space: nowrap; /* Prevent column text wrapping */
+}
+.table td.text-center {
+    vertical-align: middle;
+}
+
 
 th, td {
     border: 1px solid #ddd;
@@ -104,4 +112,9 @@ th {
 
 .visible {
     display: block;
+}
+
+.table-responsive {
+    width: 100%;  /* Ensure the container takes full width */
+    overflow-x: auto;  /* Allow horizontal scrolling if necessary */
 }
