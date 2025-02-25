@@ -308,3 +308,7 @@ def debug_cycling_data():
         matches = json.loads(value.decode("utf-8"))
         return matches  # This will return the data directly as JSON
     return "No data found for the specified key."
+
+@main_bp.route('/formula1')
+def formula1():
+    return render_template('formula1.html')
