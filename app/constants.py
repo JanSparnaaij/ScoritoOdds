@@ -11,6 +11,7 @@ LEAGUES = {
     "champions_league": "https://www.oddsportal.com/football/europe/champions-league/",
     "europa_league": "https://www.oddsportal.com/football/europe/europa-league/",
     "conference_league": "https://www.oddsportal.com/football/europe/conference-league/",
+    "nations_league": "https://www.oddsportal.com/football/europe/uefa-nations-league/",
 }
 
 # Tennis
